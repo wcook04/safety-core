@@ -1,0 +1,1347 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>Doctrine map</title>
+<link rel="icon" href="data:,">
+<style>
+:root {
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  --bg: #f4f3ef;
+  --ink: #1c1e21;
+  --ink-2: #474b52;
+  --muted: #676b72;
+  --line: #d9d6ce;
+  --line-2: #e6e3dc;
+  --link: #9a9da3;
+  --accent: #285a88;
+  --accent-soft: rgba(40, 90, 136, 0.10);
+  --gap: #9a4a2f;
+  --halo: #f4f3ef;
+  --cell-off: #b9b6ae;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #15171a; --ink: #e6e4df; --ink-2: #bfc2c7; --muted: #9196a0; --line: #2d3137;
+    --line-2: #23272c; --link: #5e646d; --accent: #8db3d9; --accent-soft: rgba(141, 179, 217, 0.12);
+    --gap: #d59478; --halo: #15171a; --cell-off: #4c525a;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #15171a; --ink: #e6e4df; --ink-2: #bfc2c7; --muted: #9196a0; --line: #2d3137;
+  --line-2: #23272c; --link: #5e646d; --accent: #8db3d9; --accent-soft: rgba(141, 179, 217, 0.12);
+  --gap: #d59478; --halo: #15171a; --cell-off: #4c525a;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: var(--bg); color: var(--ink); font: 14px/1.5 var(--sans);
+  display: flex; flex-direction: column; min-height: 100%; overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+button, select { font: inherit; color: inherit; }
+a { color: var(--accent); text-underline-offset: 2px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+/* ---------------------------------------------------------------- header */
+.top {
+  display: flex; align-items: center; gap: 24px; flex-wrap: wrap;
+  padding: 14px 24px 12px; border-bottom: 1px solid var(--line);
+}
+.ident { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; min-width: 0; }
+.ident h1 { font-size: 17px; font-weight: 650; margin: 0; letter-spacing: -0.01em; }
+.ident .ver, .ident .repo { font: 12px var(--mono); color: var(--muted); }
+.status { font: 12px var(--mono); color: var(--muted); display: inline-flex; align-items: center; gap: 7px; }
+.status .dot { width: 7px; height: 7px; border-radius: 50%; border: 1.5px solid var(--muted); }
+.status.live .dot { background: var(--accent); border-color: var(--accent); }
+.tools { margin-left: auto; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.toggle {
+  display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px 6px 10px;
+  border: 1px solid var(--line); border-radius: 6px; background: transparent; cursor: pointer;
+  font-size: 13px; color: var(--ink-2);
+}
+.toggle .box {
+  width: 12px; height: 12px; border: 1.5px solid var(--ink-2); border-radius: 3px; position: relative;
+}
+.toggle[aria-pressed="true"] { border-color: var(--accent); color: var(--ink); background: var(--accent-soft); }
+.toggle[aria-pressed="true"] .box { border-color: var(--accent); background: var(--accent); }
+.toggle[aria-pressed="true"] .box::after {
+  content: ""; position: absolute; left: 3px; top: 0px; width: 3px; height: 7px;
+  border: solid var(--bg); border-width: 0 1.5px 1.5px 0; transform: rotate(45deg);
+}
+.toggle:hover { border-color: var(--ink-2); }
+.stand-pick {
+  font: 12.5px var(--mono); padding: 5px 8px; border: 1px solid var(--line); border-radius: 6px;
+  background: var(--bg); max-width: 200px;
+}
+.stand-pick[hidden] { display: none; }
+
+/* ---------------------------------------------------------------- coverage strip */
+.coverage {
+  display: flex; align-items: center; gap: 28px; flex-wrap: wrap;
+  padding: 10px 24px; border-bottom: 1px solid var(--line); font-size: 13px; color: var(--ink-2);
+}
+.cov-main { display: flex; flex-direction: column; gap: 5px; min-width: 250px; }
+.cov-main .head { color: var(--ink); }
+.cov-main .head b { font-size: 17px; font-weight: 650; font-variant-numeric: tabular-nums; }
+.cov-bar { display: flex; height: 6px; gap: 2px; width: 250px; }
+.cov-bar span { display: block; height: 100%; background: var(--ink); border-radius: 1px; }
+.cov-bar span.prose { background: transparent; box-shadow: inset 0 0 0 1px var(--ink-2); }
+.levels { display: flex; gap: 4px; flex-wrap: wrap; list-style: none; margin: 0; padding: 0; }
+.lvl {
+  display: inline-flex; align-items: center; gap: 6px; padding: 4px 7px; border: 1px solid transparent;
+  border-radius: 6px; background: transparent; cursor: default; font-size: 12.5px; color: var(--ink-2);
+}
+.lvl:hover, .lvl:focus-visible { border-color: var(--line); color: var(--ink); }
+.lvl b { font: 600 12.5px var(--mono); color: var(--ink); }
+.cov-meta { display: grid; grid-template-columns: auto auto; gap: 2px 18px; margin-left: auto; font-size: 12.5px; align-items: center; justify-items: start; }
+.cov-meta .n { font-family: var(--mono); color: var(--ink); }
+.gaps-btn {
+  border: 1px solid var(--line); background: transparent; border-radius: 6px; padding: 2px 9px;
+  cursor: pointer; color: var(--gap); font-size: 12.5px;
+}
+.gaps-btn:hover { border-color: var(--gap); }
+
+/* ---------------------------------------------------------------- stage */
+.stage { flex: 1; display: flex; min-height: 0; }
+.map-wrap { flex: 1; position: relative; min-width: 0; overflow: hidden; }
+#map { display: block; width: 100%; height: 100%; touch-action: none; user-select: none; -webkit-user-select: none; cursor: grab; }
+#map.panning { cursor: grabbing; }
+.zoom { position: absolute; left: 14px; top: 8px; display: flex; gap: 4px; }
+.zoom button { height: 26px !important; min-width: 28px !important; font-size: 12px !important; }
+.zoom button {
+  min-width: 30px; height: 28px; padding: 0 8px; border: 1px solid var(--line); border-radius: 6px;
+  background: var(--bg); cursor: pointer; font: 13px var(--mono); color: var(--ink-2);
+}
+.zoom button:hover { border-color: var(--ink-2); color: var(--ink); }
+.message { position: absolute; inset: 0; display: grid; place-items: center; padding: 24px; color: var(--ink-2); text-align: center; }
+.message[hidden] { display: none; }
+
+/* ---------------------------------------------------------------- svg marks */
+#map text { font-family: var(--sans); fill: var(--ink); }
+.colhead { font: 600 10.5px var(--sans) !important; letter-spacing: 0.08em; text-transform: uppercase; fill: var(--muted) !important; }
+.colrule { stroke: var(--line-2); stroke-width: 1; }
+.node { cursor: pointer; outline: none; transition: opacity 260ms ease; }
+.node .hit { fill: transparent; }
+.node .ring { fill: none; stroke: var(--accent); stroke-width: 1.5; opacity: 0; }
+.node:focus-visible .ring { opacity: 1; }
+.node.selected .ring { opacity: 0.55; }
+.node:hover .hit { fill: var(--accent-soft); }
+.node.selected .hit { fill: var(--accent-soft); }
+
+.ax-bar { fill: var(--ink); transition: fill 200ms; }
+.ax-name { font: 600 13.5px var(--sans); }
+.ax-meta, .pr-id, .pr-level, .pr-note, .pl-count, .pl-note, .rt-label, .stub-text, .gh-label { font-family: var(--mono) !important; }
+.ax-meta { font-size: 11px; fill: var(--muted) !important; }
+.pr-name { font: 500 13px var(--sans); }
+.pr-id { font-size: 10px; fill: var(--muted) !important; }
+.pr-anti { font: italic 400 11.5px var(--sans); fill: var(--muted) !important; }
+.pr-anti-key { font: 400 10px var(--mono); fill: var(--muted) !important; }
+.pr-level { font-size: 11px; fill: var(--ink-2) !important; }
+.pr-level.words, .pr-note, .pl-note { fill: var(--gap) !important; }
+.pr-note, .pl-note { font-size: 10.5px; }
+.cell.on { fill: var(--ink); stroke: var(--ink); stroke-width: 1; transition: fill 400ms, stroke 400ms; }
+.cell.off { fill: none; stroke: var(--cell-off); stroke-width: 1; transition: fill 400ms, stroke 400ms; }
+.cell.owed { fill: none; stroke: var(--gap); stroke-width: 1; stroke-dasharray: 2 1.5; }
+.prose .cell.off { stroke: var(--ink-2); }
+.anchor { fill: var(--ink); }
+.anchor.open { fill: var(--bg); stroke: var(--muted); stroke-width: 1.25; }
+.pr-every { font: 400 10.5px var(--mono); fill: var(--muted) !important; }
+
+.rt-dot { fill: var(--bg); stroke: var(--ink); stroke-width: 1.5; }
+.rt-core { fill: var(--ink); }
+.dead .rt-dot { stroke: var(--gap); stroke-dasharray: 2 2; }
+.rt-label { font-size: 11px; fill: var(--ink-2) !important; paint-order: stroke; stroke: var(--halo); stroke-width: 4px; stroke-linejoin: round; }
+.dead .rt-label { fill: var(--gap) !important; }
+
+.pl-mark { fill: var(--ink); }
+.pl-mark.open { fill: var(--bg); stroke: var(--muted); stroke-width: 1.25; }
+.pl-mark.exposed { fill: var(--bg); stroke: var(--gap); stroke-width: 1.5; }
+.pl-name { font: 400 12px var(--mono) !important; }
+.pl-name.quiet { fill: var(--ink-2) !important; }
+.pl-count { font-size: 10.5px; fill: var(--muted) !important; }
+.tree { stroke: var(--line); stroke-width: 1; fill: none; }
+.gh-mark { fill: none; stroke: var(--gap); stroke-width: 1.25; stroke-dasharray: 2 2; }
+.gh-label { font-size: 11.5px; fill: var(--muted) !important; font-style: italic; }
+.sect { font: 600 10px var(--sans) !important; letter-spacing: 0.08em; text-transform: uppercase; fill: var(--muted) !important; }
+
+.lnk { fill: none; stroke: var(--link); stroke-width: 1; opacity: 0.7; transition: opacity 260ms ease, stroke 200ms; }
+.lnk.dead { stroke: var(--gap); stroke-dasharray: 3 3; }
+.lnk.serves { stroke-dasharray: 2 3; }
+.lnk.lit { stroke: var(--accent); stroke-width: 1.6; opacity: 1; }
+.node.lit .ax-bar, .node.selected .ax-bar { fill: var(--accent); }
+.node.lit .ax-name, .node.lit .pr-name, .node.lit .pl-name, .node.selected .ax-name, .node.selected .pr-name, .node.selected .pl-name { fill: var(--accent); }
+.node.lit .rt-dot { stroke: var(--accent); }
+.node.lit .rt-core { fill: var(--accent); }
+.node.lit .anchor, .node.lit .pl-mark:not(.open):not(.exposed) { fill: var(--accent); }
+.node.lit .rt-label { fill: var(--accent) !important; }
+
+/* ---------------------------------------------------------------- panel */
+.panel {
+  width: clamp(340px, 27vw, 460px); border-left: 1px solid var(--line); overflow-y: auto;
+  padding: 22px 24px 40px; font-size: 13.5px; color: var(--ink-2);
+}
+.panel h2 { font-size: 18px; line-height: 1.3; font-weight: 650; color: var(--ink); margin: 0 0 4px; letter-spacing: -0.01em; }
+.panel h3 { font-size: 11px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); margin: 24px 0 8px; }
+.panel p { margin: 0 0 10px; }
+.panel .kind { font: 11.5px var(--mono); color: var(--muted); margin-bottom: 8px; display: flex; gap: 10px; align-items: center; }
+.panel .lead { font-size: 15px; color: var(--ink); line-height: 1.5; }
+.panel .clause { font: 12.5px/1.55 var(--mono); color: var(--ink); background: transparent; border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; overflow-wrap: anywhere; }
+.panel .anti { border-left: 2px solid var(--line); padding-left: 12px; font-style: italic; }
+.panel ul { list-style: none; margin: 0; padding: 0; }
+.panel .back { border: 0; background: transparent; padding: 0; color: var(--accent); cursor: pointer; font-size: 12.5px; margin-bottom: 14px; }
+.row-btn {
+  display: flex; align-items: center; gap: 10px; width: 100%; text-align: left; padding: 6px 8px; margin: 0 -8px;
+  border: 0; background: transparent; border-radius: 5px; cursor: pointer; color: var(--ink);
+}
+.row-btn:hover { background: var(--accent-soft); }
+.row-btn .sub { color: var(--muted); font: 11px var(--mono); margin-left: auto; white-space: nowrap; }
+.row-btn .txt { min-width: 0; }
+.mono { font-family: var(--mono); font-size: 12.5px; }
+.src { margin: 0 0 14px; }
+.src .t { color: var(--ink); }
+.src .m { font: 11.5px var(--mono); color: var(--muted); }
+.src blockquote { margin: 6px 0 0; padding-left: 12px; border-left: 2px solid var(--line); font-style: italic; }
+.enf { display: flex; gap: 10px; align-items: baseline; padding: 4px 0; flex-wrap: wrap; }
+.enf .ref { font: 12px var(--mono); color: var(--ink); }
+.enf .st { font: 11.5px var(--mono); color: var(--muted); }
+.enf .st.missing { color: var(--gap); }
+.gapnote { color: var(--gap); }
+.gap-item { padding: 6px 8px; margin: 0 -8px; border-radius: 5px; cursor: pointer; display: block; width: calc(100% + 16px); text-align: left; border: 0; background: transparent; color: var(--ink-2); }
+.gap-item:hover { background: var(--accent-soft); }
+.gap-item .k { display: block; font: 11px var(--mono); color: var(--gap); }
+.legend li { display: grid; grid-template-columns: 40px 64px 1fr; gap: 8px; align-items: center; padding: 3px 0; }
+.legend .lv { font: 12px var(--mono); color: var(--ink); }
+.enforce-pair { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; align-items: center; }
+.enforce-pair .lab { color: var(--muted); font-size: 12.5px; }
+details.entry summary { cursor: pointer; color: var(--ink); }
+details.entry pre { font: 11.5px/1.55 var(--mono); white-space: pre-wrap; color: var(--ink-2); border: 1px solid var(--line); border-radius: 6px; padding: 10px 12px; margin: 8px 0 0; }
+.reminder { color: var(--ink); border-left: 2px solid var(--accent); padding-left: 12px; margin: 4px 0 8px; }
+.route-block { margin-bottom: 16px; }
+.route-block .rn { font: 12.5px var(--mono); color: var(--ink); }
+.route-block .on { font: 11.5px var(--mono); color: var(--muted); }
+svg.meter { flex: none; vertical-align: middle; }
+svg.meter .on { fill: var(--ink); stroke: var(--ink); }
+svg.meter .off { fill: none; stroke: var(--cell-off); }
+svg.meter.prose .off { stroke: var(--ink-2); }
+svg.meter .owed { fill: none; stroke: var(--gap); stroke-dasharray: 2 1.5; }
+
+@media (max-width: 860px) {
+  body { overflow: auto; display: block; }
+  .top { padding: 12px 16px; gap: 10px; }
+  .tools { margin-left: 0; }
+  .coverage { padding: 10px 16px; gap: 12px; }
+  .cov-meta { margin-left: 0; }
+  .stage { display: block; }
+  .map-wrap { height: 64vh; border-bottom: 1px solid var(--line); }
+  .panel { width: auto; border-left: 0; padding: 18px 16px 40px; overflow: visible; }
+}
+@media (min-width: 2200px) {
+  body { font-size: 15.5px; }
+  .ident h1 { font-size: 20px; }
+  .ident .ver, .ident .repo, .status { font-size: 13.5px; }
+  .toggle { font-size: 14.5px; padding: 8px 14px 8px 12px; }
+  .coverage, .cov-meta, .lvl, .lvl b { font-size: 14px; }
+  .cov-main .head b { font-size: 20px; }
+  .panel { font-size: 15px; width: clamp(420px, 24vw, 560px); padding: 28px 32px 48px; }
+  .panel h2 { font-size: 21px; }
+  .panel h3 { font-size: 12px; }
+  .panel .lead { font-size: 16.5px; }
+  .mono, .panel .clause, .src .m, .enf .ref, .enf .st, .row-btn .sub { font-size: 13.5px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .node, .lnk, .cell.on, .cell.off { transition: none; }
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="ident">
+    <h1 id="docName">Doctrine map</h1>
+    <span class="ver" id="docVer"></span>
+    <span class="repo" id="repoName"></span>
+    <span class="status" id="status"><span class="dot"></span><span id="statusText">Loading</span></span>
+  </div>
+  <div class="tools" role="toolbar" aria-label="Map views">
+    <button class="toggle" id="tEnforced" type="button" aria-pressed="false" title="Fade principles that are only words or only advice"><span class="box"></span>Only what is enforced</button>
+    <button class="toggle" id="tStand" type="button" aria-pressed="false" title="Pick a place and see what an agent receives there"><span class="box"></span>Stand here</button>
+    <select class="stand-pick" id="standPick" aria-label="Place to stand in" hidden></select>
+  </div>
+</header>
+<section class="coverage" id="coverage" aria-label="Coverage"></section>
+<main class="stage">
+  <div class="map-wrap" id="mapWrap">
+    <svg id="map" role="group" aria-label="Doctrine map. Use arrow keys to move between marks and Enter to open one."></svg>
+    <div class="zoom">
+      <button type="button" id="zOut" aria-label="Zoom out">&minus;</button>
+      <button type="button" id="zIn" aria-label="Zoom in">+</button>
+      <button type="button" id="zFit" aria-label="Fit the map to the window">Fit</button>
+    </div>
+    <div class="message" id="message" hidden></div>
+  </div>
+  <aside class="panel" id="panel" aria-label="Details"></aside>
+</main>
+<div class="sr" id="announce" aria-live="polite"></div>
+<script id="doctrine-graph" type="application/json"></script>
+<script>
+/* doctrine-map viewer. Reads doctrine-map/graph@1 and draws the doctrine and the
+   repository as one deterministic picture: axioms, the principles that serve them,
+   the routes that deliver principles, and the places in the repository they reach.
+   No dependencies. Works from file:// when the graph is inlined above. */
+(function () {
+  'use strict';
+
+  const SVGNS = 'http://www.w3.org/2000/svg';
+  const LEVELS = ['block', 'ask', 'check', 'remind', 'advise', 'prose'];
+  const STRENGTH = { block: 5, ask: 4, check: 3, remind: 2, advise: 1, prose: 0 };
+  const MEANING = {
+    block: 'A hook refuses the action.',
+    ask: 'A hook stops and asks a person.',
+    check: 'CI or the doctrine check fails.',
+    remind: 'A factual reminder reaches the agent where it works.',
+    advise: 'A note to the person at the end of a turn.',
+    prose: 'Written down only.',
+  };
+  const ON_WORDS = { read: 'reads', edit: 'edits files', shell: 'runs commands' };
+  const SANS = '-apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, Roboto, "Helvetica Neue", Arial, sans-serif';
+  const MONO = 'ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace';
+  const F = {
+    axiom: '600 13.5px ' + SANS,
+    pr: '500 13px ' + SANS,
+    anti: 'italic 400 11.5px ' + SANS,
+    mono11: '400 11px ' + MONO,
+    mono105: '400 10.5px ' + MONO,
+    place: '400 12px ' + MONO,
+    ghost: 'italic 400 11.5px ' + MONO,
+  };
+  const reduceMotion = !!(window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+  const $ = (id) => document.getElementById(id);
+  const svg = $('map');
+  const panel = $('panel');
+
+  const S = {
+    graph: null, M: null, L: null, origin: '', live: false, lastRedraw: '',
+    selected: null, hover: null, levelHover: null,
+    enforcedOnly: false, standAt: null,
+    user: { k: 1, x: 0, y: 0 }, base: { k: 1, x: 0, y: 0 },
+    focusId: null,
+    nodes: new Map(), links: new Map(), cur: new Map(), tween: 0,
+    layers: null,
+  };
+
+  // ------------------------------------------------------------------ helpers
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  function natural(a, b) {
+    const x = String(a), y = String(b);
+    return x.localeCompare(y, 'en', { numeric: true, sensitivity: 'base' });
+  }
+  function el(tag, attrs, parent) {
+    const e = document.createElementNS(SVGNS, tag);
+    if (attrs) for (const k in attrs) if (attrs[k] != null) e.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(e);
+    return e;
+  }
+  function txt(parent, x, y, s, cls, attrs) {
+    const t = el('text', Object.assign({ x: x, y: y, class: cls, 'dominant-baseline': 'central' }, attrs || {}), parent);
+    t.textContent = s;
+    return t;
+  }
+  const measurer = document.createElement('canvas').getContext('2d');
+  function width(s, font) { measurer.font = font; return measurer.measureText(s).width; }
+  function fit(s, font, max) {
+    s = String(s || '');
+    if (width(s, font) <= max) return s;
+    let lo = 0, hi = s.length;
+    while (lo < hi) {
+      const mid = (lo + hi + 1) >> 1;
+      if (width(s.slice(0, mid).trimEnd() + '…', font) <= max) lo = mid; else hi = mid - 1;
+    }
+    return s.slice(0, lo).trimEnd() + '…';
+  }
+  function wrap(s, font, max, maxLines) {
+    const words = String(s || '').split(/\s+/).filter(Boolean);
+    const lines = [];
+    let line = '';
+    for (let i = 0; i < words.length; i++) {
+      const tryLine = line ? line + ' ' + words[i] : words[i];
+      if (width(tryLine, font) <= max || !line) { line = tryLine; continue; }
+      lines.push(line); line = words[i];
+      if (lines.length === maxLines) { line = null; break; }
+    }
+    if (line) lines.push(line);
+    if (lines.length > maxLines || (line === null)) {
+      const kept = lines.slice(0, maxLines);
+      kept[maxLines - 1] = fit(kept[maxLines - 1] + ' ' + words.join(' ').slice(kept.join(' ').length), font, max);
+      return kept;
+    }
+    return lines.map((l) => fit(l, font, max));
+  }
+  function plural(n, one, many) { return n + ' ' + (n === 1 ? one : (many || one + 's')); }
+  function fmtDate(iso) {
+    const d = new Date(iso);
+    if (isNaN(d)) return iso || '';
+    const m = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getUTCMonth()];
+    const p = (n) => String(n).padStart(2, '0');
+    return d.getUTCDate() + ' ' + m + ' ' + d.getUTCFullYear() + ', ' + p(d.getUTCHours()) + ':' + p(d.getUTCMinutes()) + ' UTC';
+  }
+  function meterSVG(eff, dec) {
+    const s = STRENGTH[eff] == null ? 0 : STRENGTH[eff];
+    const d = STRENGTH[dec] == null ? s : STRENGTH[dec];
+    let out = '<svg class="meter' + (s === 0 ? ' prose' : '') + '" width="31" height="12" viewBox="0 0 31 12" aria-hidden="true">';
+    for (let i = 0; i < 5; i++) {
+      const cls = i < s ? 'on' : (i < d ? 'owed' : 'off');
+      out += '<rect class="' + cls + '" x="' + (i * 6.5 + 0.5) + '" y="0.5" width="4.5" height="11" rx="0.8"/>';
+    }
+    return out + '</svg>';
+  }
+
+  // ------------------------------------------------------------------ model
+  function buildModel(g) {
+    const byId = new Map();
+    for (const n of g.nodes || []) byId.set(n.id, n);
+    const of = (k) => (g.nodes || []).filter((n) => n.kind === k);
+    const axioms = of('axiom').sort((a, b) => natural(a.id, b.id));
+    const principles = of('principle');
+    const routes = of('route').sort((a, b) => natural(a.id, b.id));
+    const places = of('place');
+
+    const routePr = new Map(routes.map((r) => [r.id, []]));
+    const routePl = new Map(routes.map((r) => [r.id, []]));
+    const prAx = new Map(principles.map((p) => [p.id, []]));
+    let sawApplies = false, sawGoverns = false, sawServes = false;
+    for (const e of g.edges || []) {
+      if (e.kind === 'applies' && routePr.has(e.from) && byId.has(e.to)) { sawApplies = true; if (!routePr.get(e.from).includes(e.to)) routePr.get(e.from).push(e.to); }
+      if (e.kind === 'governs' && routePl.has(e.from) && byId.has(e.to)) { sawGoverns = true; if (!routePl.get(e.from).includes(e.to)) routePl.get(e.from).push(e.to); }
+      if (e.kind === 'serves' && prAx.has(e.from) && byId.has(e.to)) { sawServes = true; if (!prAx.get(e.from).includes(e.to)) prAx.get(e.from).push(e.to); }
+    }
+    if (!sawApplies) for (const r of routes) routePr.set(r.id, (r.principles || []).filter((p) => byId.has(p)));
+    if (!sawGoverns) for (const pl of places) for (const r of pl.routes || []) if (routePl.has(r)) routePl.get(r).push(pl.id);
+    for (const p of principles) {
+      const declared = (p.axioms || []).filter((a) => byId.has(a));
+      if (declared.length) prAx.set(p.id, declared.concat(prAx.get(p.id).filter((a) => !declared.includes(a))));
+      else if (!sawServes) prAx.set(p.id, []);
+    }
+    const prRoutes = new Map(principles.map((p) => [p.id, []]));
+    for (const [r, ps] of routePr) for (const p of ps) prRoutes.get(p) && prRoutes.get(p).push(r);
+    const plRoutes = new Map(places.map((p) => [p.id, []]));
+    for (const [r, ps] of routePl) for (const p of ps) plRoutes.get(p) && plRoutes.get(p).push(r);
+    const dead = new Set(routes.filter((r) => r.matches === 0 || routePl.get(r.id).length === 0).map((r) => r.id));
+
+    // principles grouped by their first axiom, in axiom order
+    const groups = axioms.map((a) => ({ axiom: a, items: [] }));
+    const gIndex = new Map(groups.map((g2, i) => [g2.axiom.id, i]));
+    const loose = { axiom: null, items: [] };
+    for (const p of principles.slice().sort((a, b) => natural(a.id, b.id))) {
+      const first = prAx.get(p.id)[0];
+      if (first != null && gIndex.has(first)) groups[gIndex.get(first)].items.push(p); else loose.items.push(p);
+    }
+    if (loose.items.length) groups.push(loose);
+    const prOrder = groups.flatMap((g2) => g2.items);
+
+    // places as a tree: directories by path, then root files
+    const pathOf = (p) => p.path || p.id.replace(/^place:/, '');
+    const isRootFile = (p) => !p.is_dir && !pathOf(p).includes('/');
+    const sortKey = (p) => pathOf(p).toLowerCase().split('/').join('\u0000');
+    const dirs = places.filter((p) => !isRootFile(p)).sort((a, b) => (sortKey(a) < sortKey(b) ? -1 : sortKey(a) > sortKey(b) ? 1 : 0));
+    const roots = places.filter(isRootFile).sort((a, b) => natural(pathOf(a).toLowerCase(), pathOf(b).toLowerCase()));
+    const pathSet = new Set(places.map(pathOf));
+    const parentOf = (p) => {
+      const parts = pathOf(p).split('/');
+      for (let i = parts.length - 1; i > 0; i--) { const q = parts.slice(0, i).join('/'); if (pathSet.has(q)) return q; }
+      return null;
+    };
+
+    // entry card membership
+    const entryText = ((g.entry && g.entry.lines) || []).join('\n');
+    const inEntry = new Set(principles.filter((p) => new RegExp('(^|[^\\w])' + p.id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '([^\\w]|$)').test(entryText)).map((p) => p.id));
+    const global = new Set(principles.filter((p) => p.global || (prRoutes.get(p.id) || []).filter((r) => !dead.has(r)).length === 0).map((p) => p.id));
+
+    return {
+      g, byId, axioms, principles: prOrder, routes, places, dirs, roots, groups, routePr, routePl, prAx, prRoutes, plRoutes,
+      dead, pathOf, parentOf, inEntry, global, gaps: g.gaps || [],
+      eff: (p) => (STRENGTH[p.effective] != null ? p.effective : 'prose'),
+    };
+  }
+
+  // ------------------------------------------------------------------ layout
+  function computeLayout(M, cw, ch) {
+    const scale = clamp(Math.min(cw / 1260, ch / 760), 1, 1.25);
+    let W = cw / scale, H = ch / scale;
+    const LW = clamp(W, 1000, 1800);
+    const top = 48, bottom = 18;
+    const L = { LW: LW, top: top };
+    const pad = 24;
+    L.axW = clamp(LW * 0.165, 172, 250);
+    L.barX = pad + L.axW + 14;
+    L.idX = L.barX + 30;
+    L.meterX = L.barX + 36;
+    L.nameX = L.meterX + 40;
+    L.prW = clamp(LW * 0.27, 262, 390);
+    L.levelRight = L.nameX + L.prW + 70;
+    L.anchorX = L.levelRight + 12;
+    L.plW = clamp(LW * 0.17, 196, 270);
+    L.placeX = LW - pad - L.plW - 14;
+    L.routeX = L.anchorX + (L.placeX - L.anchorX) * 0.5;
+
+    // principle rows
+    const gapG = 10, minBand = 46;
+    const prH = (pitch) => M.groups.reduce((s, g) => s + Math.max(g.items.length * pitch, g.axiom ? minBand : 0), 0) + gapG * Math.max(0, M.groups.length - 1);
+    // place rows
+    const rows = [];
+    for (const p of M.dirs) rows.push({ t: 'place', n: p });
+    if (M.roots.length) { if (rows.length) rows.push({ t: 'sect', id: 'sect:root', label: 'Root files' }); for (const p of M.roots) rows.push({ t: 'place', n: p }); }
+    const deadRoutes = M.routes.filter((r) => M.dead.has(r.id));
+    if (deadRoutes.length) { rows.push({ t: 'sect', id: 'sect:dead', label: 'Routes that match nothing' }); for (const r of deadRoutes) rows.push({ t: 'ghost', id: 'ghost:' + r.id, r: r }); }
+    const plH = (pitch) => rows.reduce((s, r) => s + (r.t === 'sect' ? pitch * 0.7 + 12 : pitch), 0);
+
+    const avail = H - top - bottom;
+    let pp = 56; while (pp > 36 && prH(pp) > avail) pp -= 0.5;
+    let pl = 32; while (pl > 22 && plH(pl) > avail) pl -= 0.5;
+    L.pitchP = pp; L.pitchL = pl;
+    const LH = Math.max(H, top + bottom + Math.max(prH(pp), plH(pl)));
+    L.LH = LH;
+    L.y = new Map(); L.band = new Map(); L.rows = rows;
+
+    let y = top + (LH - top - bottom - prH(pp)) / 2;
+    for (const g of M.groups) {
+      const h = Math.max(g.items.length * pp, g.axiom ? minBand : 0);
+      const inner = (h - g.items.length * pp) / 2;
+      g.items.forEach((p, i) => L.y.set(p.id, y + inner + i * pp + pp / 2 - 7));
+      if (g.axiom) {
+        const y0 = y + inner + 4, y1 = y + inner + Math.max(g.items.length, 1) * pp - 4;
+        const a0 = g.items.length ? y0 : y + 6, a1 = g.items.length ? y1 : y + h - 6;
+        L.band.set(g.axiom.id, { y0: a0, y1: a1, h: h });
+        L.y.set(g.axiom.id, (a0 + a1) / 2);
+      }
+      y += h + gapG;
+    }
+    y = top + (LH - top - bottom - plH(pl)) / 2;
+    for (const r of rows) {
+      if (r.t === 'sect') { y += 12; L.y.set(r.id, y + pl * 0.35); y += pl * 0.7; continue; }
+      L.y.set(r.t === 'place' ? r.n.id : r.id, y + pl / 2);
+      y += pl;
+    }
+    // route junctions: at the mean of what they join, then spaced apart
+    const order = M.routes.map((r) => {
+      const ps = M.routePr.get(r.id).map((p) => L.y.get(p)).filter((v) => v != null);
+      const ls = M.dead.has(r.id) ? [L.y.get('ghost:' + r.id)] : M.routePl.get(r.id).map((p) => L.y.get(p)).filter((v) => v != null);
+      const mean = (a) => a.reduce((s, v) => s + v, 0) / a.length;
+      const target = ls.length && ps.length ? 0.6 * mean(ls) + 0.4 * mean(ps) : (ls.length ? mean(ls) : ps.length ? mean(ps) : LH / 2);
+      return { id: r.id, t: target };
+    }).sort((a, b) => a.t - b.t || natural(a.id, b.id));
+    const gap = 34, lo = top + 14, hi = LH - bottom - 4;
+    for (let i = 0; i < order.length; i++) order[i].y = Math.max(order[i].t, i ? order[i - 1].y + gap : lo);
+    for (let i = order.length - 1; i >= 0; i--) order[i].y = Math.min(order[i].y, i < order.length - 1 ? order[i + 1].y - gap : hi);
+    for (const o of order) L.y.set(o.id, Math.max(o.y, lo));
+    L.routeOrder = order.map((o) => o.id);
+    return { L: L, scale: scale };
+  }
+
+  // ------------------------------------------------------------------ drawing
+  function ensureLayers() {
+    if (S.layers) return S.layers;
+    const vp = el('g', { id: 'vp' }, svg);
+    S.layers = { vp: vp, heads: el('g', {}, vp), links: el('g', {}, vp), nodes: el('g', {}, vp) };
+    return S.layers;
+  }
+
+  function drawHeads(L) {
+    const h = S.layers.heads;
+    h.textContent = '';
+    const y = 24;
+    txt(h, L.barX - 14, y, 'Axioms', 'colhead', { 'text-anchor': 'end' });
+    txt(h, L.meterX, y, 'Principles and how they hold', 'colhead');
+    txt(h, L.routeX, y, 'Routes', 'colhead', { 'text-anchor': 'middle' });
+    txt(h, L.placeX - 4, y, 'Places in the repository', 'colhead');
+    txt(h, L.placeX + 14 + L.plW, y, 'files', 'colhead', { 'text-anchor': 'end' });
+    el('line', { x1: 24, x2: L.LW - 24, y1: 38, y2: 38, class: 'colrule' }, h);
+  }
+
+  function nodeGroup(id, kind) {
+    let rec = S.nodes.get(id);
+    if (!rec) {
+      const g = el('g', { class: 'node ' + kind, 'data-id': id, tabindex: '-1', role: 'button' }, S.layers.nodes);
+      if (kind === 'sect') { g.setAttribute('class', 'sect-g'); g.removeAttribute('tabindex'); g.removeAttribute('role'); g.setAttribute('aria-hidden', 'true'); }
+      g.style.opacity = '0';
+      rec = { g: g, kind: kind, fresh: true };
+      S.nodes.set(id, rec);
+    } else {
+      rec.fresh = false;
+      rec.g.setAttribute('class', (kind === 'sect' ? 'sect-g' : 'node ' + kind));
+    }
+    rec.g.textContent = '';
+    rec.alive = true;
+    return rec;
+  }
+
+  function drawAxiom(a, L, M) {
+    const rec = nodeGroup(a.id, 'axiom');
+    const g = rec.g, b = L.band.get(a.id), cy = L.y.get(a.id);
+    const n = M.groups.find((x) => x.axiom === a).items.length;
+    const r0 = b.y0 - cy, r1 = b.y1 - cy;
+    el('rect', { class: 'hit', x: 16, y: r0 - 4, width: L.barX - 10, height: r1 - r0 + 8, rx: 5 }, g);
+    el('rect', { class: 'ring', x: 16, y: r0 - 4, width: L.barX - 10, height: r1 - r0 + 8, rx: 5 }, g);
+    el('rect', { class: 'ax-bar', x: L.barX - 3, y: r0, width: 6, height: r1 - r0, rx: 3 }, g);
+    const maxLines = (r1 - r0) >= 30 ? 2 : 1;
+    const lines = wrap(a.name, F.axiom, L.axW - 8, maxLines);
+    const meta = a.id + ' · ' + plural(n, 'principle');
+    const blockH = lines.length * 17 + 15;
+    let y0 = -blockH / 2 + 8;
+    for (const line of lines) { txt(g, L.barX - 14, y0, line, 'ax-name', { 'text-anchor': 'end' }); y0 += 17; }
+    txt(g, L.barX - 14, y0 - 1, meta, 'ax-meta', { 'text-anchor': 'end' });
+    el('title', {}, g).textContent = a.name + '. ' + (a.plain || '');
+    g.setAttribute('aria-label', 'Axiom ' + a.id + ': ' + a.name + '. ' + plural(n, 'principle') + '.');
+  }
+
+  function drawPrinciple(p, L, M) {
+    const eff = M.eff(p), dec = STRENGTH[p.declared] != null ? p.declared : eff;
+    const s = STRENGTH[eff], d = STRENGTH[dec];
+    const rec = nodeGroup(p.id, 'principle' + (s === 0 ? ' prose' : ''));
+    const g = rec.g;
+    const rowH = Math.min(L.pitchP - 4, 40);
+    el('rect', { class: 'hit', x: L.barX + 8, y: -14, width: L.anchorX - L.barX - 2, height: rowH, rx: 5 }, g);
+    el('rect', { class: 'ring', x: L.barX + 8, y: -14, width: L.anchorX - L.barX - 2, height: rowH, rx: 5 }, g);
+    txt(g, L.idX, 0, p.id, 'pr-id', { 'text-anchor': 'end' });
+    for (let i = 0; i < 5; i++) {
+      const cls = i < s ? 'on' : (i < d ? 'owed' : 'off');
+      el('rect', { class: 'cell ' + cls, x: L.meterX + i * 6.5, y: -5.5, width: 4.5, height: 11, rx: 0.8 }, g);
+    }
+    txt(g, L.nameX, 0, fit(p.name, F.pr, L.prW), 'pr-name');
+    // the level it actually holds at, in words
+    txt(g, L.levelRight, 0, s === 0 ? 'only words' : eff, 'pr-level' + (s === 0 ? ' words' : ''), { 'text-anchor': 'end' });
+    // the anti-principle, quieter, beneath
+    const notes = [];
+    if (d > s) notes.push(['declared ' + dec, 'pr-note']);
+    const missing = (p.enforcers || []).filter((e) => e.status && e.status !== 'present').length;
+    if (missing) notes.push([missing + ' enforcer' + (missing > 1 ? 's' : '') + ' missing', 'pr-note']);
+    if (M.global.has(p.id)) notes.push(['everywhere', 'pr-every']);
+    let noteW = 0;
+    for (let i = notes.length - 1; i >= 0; i--) {
+      txt(g, L.levelRight - noteW, 16, notes[i][0], notes[i][1], { 'text-anchor': 'end' });
+      noteW += width(notes[i][0], F.mono105) + 10;
+    }
+    if (noteW) noteW += 4;
+    if (p.anti && L.pitchP >= 36) {
+      txt(g, L.nameX, 16, 'not', 'pr-anti-key');
+      txt(g, L.nameX + 26, 16, fit(p.anti, F.anti, L.levelRight - noteW - L.nameX - 26), 'pr-anti');
+    }
+    el('circle', { class: 'anchor' + (M.global.has(p.id) ? ' open' : ''), cx: L.anchorX, cy: 0, r: 3.25 }, g);
+    el('title', {}, g).textContent = p.name + ' (' + p.id + '). ' + (p.one || '');
+    g.setAttribute('aria-label', 'Principle ' + p.id + ': ' + p.name + '. Holds at ' + (s === 0 ? 'prose, only words' : eff) + (d > s ? ', declared ' + dec : '') + '.');
+  }
+
+  function drawRoute(r, L, M) {
+    const isDead = M.dead.has(r.id);
+    const rec = nodeGroup(r.id, 'route' + (isDead ? ' dead' : ''));
+    const g = rec.g;
+    const name = r.name || r.id.replace(/^route:/, '');
+    const w = Math.max(width(name, F.mono11) + 16, 40);
+    el('rect', { class: 'hit', x: L.routeX - w / 2, y: -24, width: w, height: 32, rx: 5 }, g);
+    el('rect', { class: 'ring', x: L.routeX - w / 2, y: -24, width: w, height: 32, rx: 5 }, g);
+    txt(g, L.routeX, -13, name, 'rt-label', { 'text-anchor': 'middle' });
+    el('circle', { class: 'rt-dot', cx: L.routeX, cy: 0, r: 5 }, g);
+    if (!isDead) el('circle', { class: 'rt-core', cx: L.routeX, cy: 0, r: 2 }, g);
+    el('title', {}, g).textContent = 'Route ' + name + (isDead ? ': matches no file' : ': ' + plural(r.matches || 0, 'file') + ' matched');
+    g.setAttribute('aria-label', 'Route ' + name + (isDead ? ', matches no file' : ', ' + plural(M.routePl.get(r.id).length, 'place')) + '.');
+  }
+
+  function drawPlace(p, L, M) {
+    const rec = nodeGroup(p.id, 'place');
+    const g = rec.g;
+    const path = M.pathOf(p);
+    const parent = M.parentOf(p);
+    const indent = parent ? 16 : 0;
+    const routed = (M.plRoutes.get(p.id) || []).length > 0;
+    const exposed = p.sensitive && !routed;
+    const h = L.pitchL;
+    el('rect', { class: 'hit', x: L.placeX - 10, y: -h / 2 + 1, width: L.plW + 28, height: h - 2, rx: 4 }, g);
+    el('rect', { class: 'ring', x: L.placeX - 10, y: -h / 2 + 1, width: L.plW + 28, height: h - 2, rx: 4 }, g);
+    el('circle', { class: 'pl-mark' + (exposed ? ' exposed' : routed ? '' : ' open'), cx: L.placeX, cy: 0, r: 4 }, g);
+    const lx = L.placeX + 14 + indent;
+    if (parent) {
+      const py = L.y.get('place:' + parent);
+      const up = py != null ? Math.min(L.y.get(p.id) - py - 7, h) : h * 0.6;
+      el('path', { class: 'tree', d: 'M' + (lx - 9) + ' ' + (-up) + ' V0 H' + (lx - 3) }, g);
+    }
+    const label = parent ? path.slice(parent.length + 1) : path;
+    const shown = label + (p.is_dir ? '/' : '');
+    const right = L.placeX + 14 + L.plW;
+    let rightText = exposed ? 'sensitive, no route' : String(p.files != null ? p.files : '');
+    const rw = width(rightText, F.mono105) + 10;
+    txt(g, right, 0, rightText, exposed ? 'pl-note' : 'pl-count', { 'text-anchor': 'end' });
+    txt(g, lx, 0, fit(shown, F.place, right - rw - lx), 'pl-name' + (routed ? '' : ' quiet'));
+    el('title', {}, g).textContent = path + (p.is_dir ? '/' : '') + ' · ' + plural(p.files || 0, 'file') + (routed ? '' : ' · no route');
+    g.setAttribute('aria-label', 'Place ' + path + '. ' + plural(p.files || 0, 'file') + '. ' + (routed ? plural(M.plRoutes.get(p.id).length, 'route') : 'No route') + (exposed ? ', sensitive' : '') + '.');
+  }
+
+  function drawGhost(row, L) {
+    const rec = nodeGroup(row.id, 'ghost');
+    const g = rec.g, r = row.r;
+    const h = L.pitchL;
+    el('rect', { class: 'hit', x: L.placeX - 10, y: -h / 2 + 1, width: L.plW + 28, height: h - 2, rx: 4 }, g);
+    el('rect', { class: 'ring', x: L.placeX - 10, y: -h / 2 + 1, width: L.plW + 28, height: h - 2, rx: 4 }, g);
+    el('rect', { class: 'gh-mark', x: L.placeX - 4, y: -4, width: 8, height: 8, rx: 1 }, g);
+    const pats = (r.paths || []).join(', ');
+    txt(g, L.placeX + 14, 0, fit(pats || 'no paths', F.ghost, L.plW), 'gh-label');
+    el('title', {}, g).textContent = 'Route ' + (r.name || r.id) + ' matches no file: ' + pats;
+    g.setAttribute('aria-label', 'Route ' + (r.name || r.id) + ' matches no file.');
+  }
+
+  function drawSect(row, L) {
+    const rec = nodeGroup(row.id, 'sect');
+    txt(rec.g, L.placeX - 4, 0, row.label, 'sect');
+  }
+
+  // links: computed from current (possibly animating) row positions
+  function linkSpecs(M) {
+    const out = [];
+    for (const r of M.routes) {
+      for (const p of M.routePr.get(r.id)) out.push({ key: 'a|' + r.id + '|' + p, kind: 'applies', from: p, to: r.id, dead: M.dead.has(r.id) });
+      if (M.dead.has(r.id)) out.push({ key: 'g|' + r.id + '|ghost', kind: 'governs', from: r.id, to: 'ghost:' + r.id, dead: true });
+      else for (const pl of M.routePl.get(r.id)) out.push({ key: 'g|' + r.id + '|' + pl, kind: 'governs', from: r.id, to: pl });
+    }
+    for (const p of M.principles) for (const a of M.prAx.get(p.id).slice(1)) out.push({ key: 's|' + p.id + '|' + a, kind: 'serves', from: p.id, to: a });
+    return out;
+  }
+  function linkPath(sp, L) {
+    const y = (id) => (S.cur.has(id) ? S.cur.get(id) : L.y.get(id));
+    let x1, y1, x2, y2;
+    if (sp.kind === 'applies') { x1 = L.anchorX + 3; y1 = y(sp.from); x2 = L.routeX - 5; y2 = y(sp.to); }
+    else if (sp.kind === 'governs') { x1 = L.routeX + 5; y1 = y(sp.from); x2 = L.placeX - 5; y2 = y(sp.to); }
+    else {
+      const b = L.band.get(sp.to); const py = y(sp.from);
+      x1 = L.meterX - 4; y1 = py; x2 = L.barX + 3; y2 = b ? clamp(py, b.y0 + (y(sp.to) - L.y.get(sp.to)), b.y1 + (y(sp.to) - L.y.get(sp.to))) : y(sp.to);
+      const mx = x1 - 26;
+      return 'M' + x1 + ' ' + y1 + ' C' + mx + ' ' + y1 + ' ' + mx + ' ' + y2 + ' ' + x2 + ' ' + y2;
+    }
+    if (y1 == null || y2 == null) return '';
+    const mx = (x1 + x2) / 2;
+    return 'M' + x1 + ' ' + y1 + ' C' + mx + ' ' + y1 + ' ' + mx + ' ' + y2 + ' ' + x2 + ' ' + y2;
+  }
+
+  function placeNodes() {
+    for (const [id, rec] of S.nodes) {
+      const y = S.cur.get(id);
+      if (y != null) rec.g.setAttribute('transform', 'translate(0 ' + y.toFixed(2) + ')');
+    }
+    for (const [, lk] of S.links) lk.path.setAttribute('d', linkPath(lk.sp, S.L));
+  }
+
+  function render(animate) {
+    const M = S.M = buildModel(S.graph);
+    const wrapEl = $('mapWrap');
+    const cw = Math.max(wrapEl.clientWidth, 320), ch = Math.max(wrapEl.clientHeight, 300);
+    const narrow = cw < 760;
+    const res = computeLayout(M, narrow ? 1100 : cw, narrow ? 760 : ch);
+    const L = S.L = res.L;
+    ensureLayers();
+    drawHeads(L);
+    for (const rec of S.nodes.values()) rec.alive = false;
+
+    for (const a of M.axioms) if (L.band.has(a.id)) drawAxiom(a, L, M);
+    for (const p of M.principles) drawPrinciple(p, L, M);
+    for (const r of M.routes) drawRoute(r, L, M);
+    for (const row of L.rows) {
+      if (row.t === 'place') drawPlace(row.n, L, M);
+      else if (row.t === 'ghost') drawGhost(row, L);
+      else drawSect(row, L);
+    }
+    // removed nodes fade away
+    for (const [id, rec] of S.nodes) {
+      if (rec.alive) continue;
+      rec.g.style.opacity = '0';
+      rec.g.style.pointerEvents = 'none';
+      S.nodes.delete(id);
+      setTimeout(() => rec.g.remove(), reduceMotion ? 0 : 320);
+    }
+    // links, keyed
+    const specs = linkSpecs(M);
+    const keep = new Set(specs.map((s) => s.key));
+    for (const [k, lk] of S.links) if (!keep.has(k)) { lk.path.style.opacity = '0'; S.links.delete(k); setTimeout(() => lk.path.remove(), reduceMotion ? 0 : 320); }
+    for (const sp of specs) {
+      let lk = S.links.get(sp.key);
+      if (!lk) { lk = { path: el('path', {}, S.layers.links) }; lk.path.style.opacity = '0'; S.links.set(sp.key, lk); }
+      lk.sp = sp;
+      lk.path.setAttribute('class', 'lnk ' + sp.kind + (sp.dead ? ' dead' : ''));
+    }
+    // positions: tween from where things are drawn now
+    const from = new Map(S.cur);
+    const targets = new Map();
+    for (const id of S.nodes.keys()) if (L.y.has(id)) targets.set(id, L.y.get(id));
+    const token = ++S.tween;
+    const dur = animate && !reduceMotion ? 560 : 0;
+    const t0 = performance.now();
+    const step = (now) => {
+      if (token !== S.tween) return;
+      const t = dur ? Math.min(1, (now - t0) / dur) : 1;
+      const e = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+      S.cur = new Map();
+      for (const [id, to] of targets) { const f = from.has(id) ? from.get(id) : to; S.cur.set(id, f + (to - f) * e); }
+      placeNodes();
+      if (t < 1) requestAnimationFrame(step);
+    };
+    step(t0);
+    if (dur) requestAnimationFrame(step);
+
+    // view: fit layout into the window, keep the person's zoom and pan
+    if (narrow) {
+      // small screens: the whole map fitted to the width, in a box sized to it
+      const k = (cw - 8) / L.LW;
+      wrapEl.style.height = Math.round(L.LH * k + 44) + 'px';
+      S.base = { k: k, x: 4, y: 40 };
+    } else {
+      wrapEl.style.height = '';
+      const k = Math.min(res.scale, cw / L.LW, ch / L.LH);
+      S.base = { k: k, x: (cw - L.LW * k) / 2, y: Math.max(0, (ch - L.LH * k) / 2) };
+    }
+    applyView();
+    renderStandPicker();
+    emphasis();
+    // fresh nodes fade in after positions are set
+    requestAnimationFrame(() => emphasis());
+    ensureFocusable();
+  }
+
+  // ------------------------------------------------------------------ emphasis
+  function chain(id) {
+    const M = S.M, lit = new Set([id]);
+    const n = M.byId.get(id);
+    const addPrinciple = (p, withPlaces) => {
+      lit.add(p);
+      for (const a of M.prAx.get(p) || []) lit.add(a);
+      if (withPlaces) for (const r of M.prRoutes.get(p) || []) {
+        lit.add(r);
+        if (M.dead.has(r)) lit.add('ghost:' + r);
+        for (const pl of M.routePl.get(r) || []) lit.add(pl);
+      }
+    };
+    if (id.startsWith('ghost:')) { const r = id.slice(6); lit.add(r); for (const p of M.routePr.get(r) || []) addPrinciple(p, false); return lit; }
+    if (!n) return lit;
+    if (n.kind === 'axiom') for (const p of M.principles) { if ((M.prAx.get(p.id) || []).includes(id)) addPrinciple(p.id, true); }
+    if (n.kind === 'principle') addPrinciple(id, true);
+    if (n.kind === 'route') {
+      if (M.dead.has(id)) lit.add('ghost:' + id);
+      for (const pl of M.routePl.get(id) || []) lit.add(pl);
+      for (const p of M.routePr.get(id) || []) addPrinciple(p, false);
+    }
+    if (n.kind === 'place') for (const r of M.plRoutes.get(id) || []) { lit.add(r); for (const p of M.routePr.get(r) || []) addPrinciple(p, false); }
+    return lit;
+  }
+  function faded(id) {
+    const M = S.M, n = M.byId.get(id);
+    if (!n) return id.startsWith('ghost:');
+    if (n.kind === 'principle') return STRENGTH[M.eff(n)] <= 1;
+    if (n.kind === 'route') return M.dead.has(id) || M.routePr.get(id).every((p) => faded(p));
+    if (n.kind === 'axiom') return M.principles.filter((p) => M.prAx.get(p.id)[0] === id).every((p) => faded(p.id));
+    return false;
+  }
+  function standFactor(id) {
+    const M = S.M, at = S.standAt;
+    const R = new Set(M.plRoutes.get(at) || []);
+    const P = new Set(); for (const r of R) for (const p of M.routePr.get(r)) P.add(p);
+    for (const p of M.global) P.add(p);
+    const n = M.byId.get(id);
+    if (id === at) return 1;
+    if (!n) return 0.14;
+    if (n.kind === 'place') return 0.16;
+    if (n.kind === 'route') return R.has(id) ? 1 : 0.14;
+    if (n.kind === 'principle') return P.has(id) ? 1 : 0.42;
+    if (n.kind === 'axiom') return M.principles.some((p) => P.has(p.id) && M.prAx.get(p.id).includes(id)) ? 1 : 0.42;
+    return 1;
+  }
+  function emphasis() {
+    if (!S.M) return;
+    const M = S.M;
+    let lit = null;
+    const ctx = S.hover || S.selected;
+    if (S.levelHover) {
+      lit = new Set(M.principles.filter((p) => M.eff(p) === S.levelHover).map((p) => p.id));
+    } else if (ctx && (M.byId.has(ctx) || ctx.startsWith('ghost:'))) lit = chain(ctx);
+    for (const [id, rec] of S.nodes) {
+      if (rec.kind === 'sect') { rec.g.style.opacity = S.standAt ? '0.3' : '1'; continue; }
+      let op = 1;
+      if (S.enforcedOnly && faded(id)) op *= 0.16;
+      if (S.standAt) op *= standFactor(id);
+      if (lit && !lit.has(id)) op *= 0.3;
+      rec.g.style.opacity = String(op);
+      rec.g.classList.toggle('lit', !!(lit && lit.has(id) && id !== S.selected && !S.levelHover));
+      rec.g.classList.toggle('selected', id === S.selected);
+    }
+    const R = S.standAt ? new Set(M.plRoutes.get(S.standAt) || []) : null;
+    for (const [, lk] of S.links) {
+      const sp = lk.sp;
+      let op = sp.kind === 'serves' ? 0.6 : 0.7;
+      if (S.enforcedOnly && (faded(sp.from) || faded(sp.to))) op *= 0.12;
+      if (R) {
+        const ok = (sp.kind === 'applies' && R.has(sp.to)) || (sp.kind === 'governs' && sp.to === S.standAt);
+        op *= ok ? 1.3 : 0.12;
+      }
+      const isLit = !!(lit && lit.has(sp.from) && lit.has(sp.to) && !S.levelHover);
+      if (lit && !isLit) op *= 0.25;
+      lk.path.classList.toggle('lit', isLit);
+      lk.path.style.opacity = String(isLit ? 1 : Math.min(op, 1));
+    }
+  }
+
+  // ------------------------------------------------------------------ view (zoom and pan)
+  function applyView() {
+    const b = S.base, u = S.user;
+    S.layers.vp.setAttribute('transform', 'translate(' + (b.x + b.k * u.x).toFixed(2) + ' ' + (b.y + b.k * u.y).toFixed(2) + ') scale(' + (b.k * u.k).toFixed(4) + ')');
+  }
+  function zoomAt(f, sx, sy) {
+    const b = S.base, u = S.user;
+    const k = clamp(u.k * f, 0.5, 4);
+    const lx = ((sx - b.x) / b.k - u.x) / u.k, ly = ((sy - b.y) / b.k - u.y) / u.k;
+    u.x = (sx - b.x) / b.k - k * lx; u.y = (sy - b.y) / b.k - k * ly; u.k = k;
+    applyView();
+  }
+  function resetView() { S.user = { k: 1, x: 0, y: 0 }; applyView(); }
+  svg.addEventListener('wheel', (e) => {
+    e.preventDefault();
+    const r = svg.getBoundingClientRect();
+    if (e.ctrlKey || e.metaKey) zoomAt(Math.exp(-e.deltaY * 0.01), e.clientX - r.left, e.clientY - r.top);
+    else { S.user.x -= e.deltaX / S.base.k / 1; S.user.y -= e.deltaY / S.base.k / 1; applyView(); }
+  }, { passive: false });
+  let drag = null;
+  svg.addEventListener('pointerdown', (e) => {
+    if (e.button !== 0) return;
+    drag = { x: e.clientX, y: e.clientY, ux: S.user.x, uy: S.user.y, moved: false, onNode: !!e.target.closest('.node') };
+  });
+  svg.addEventListener('pointermove', (e) => {
+    if (!drag) return;
+    const dx = e.clientX - drag.x, dy = e.clientY - drag.y;
+    if (!drag.moved && Math.hypot(dx, dy) > 4) { drag.moved = true; svg.classList.add('panning'); try { svg.setPointerCapture(e.pointerId); } catch (err) { /* ignore */ } }
+    if (drag.moved) { S.user.x = drag.ux + dx / S.base.k; S.user.y = drag.uy + dy / S.base.k; applyView(); }
+  });
+  const endDrag = (e) => {
+    if (!drag) return;
+    const d = drag; drag = null; svg.classList.remove('panning');
+    if (d.moved) { suppressClick = true; setTimeout(() => (suppressClick = false), 0); }
+    else if (!d.onNode && e.type === 'pointerup') select(null);
+  };
+  let suppressClick = false;
+  svg.addEventListener('pointerup', endDrag);
+  svg.addEventListener('pointercancel', endDrag);
+  $('zIn').addEventListener('click', () => zoomAt(1.25, svg.clientWidth / 2, svg.clientHeight / 2));
+  $('zOut').addEventListener('click', () => zoomAt(0.8, svg.clientWidth / 2, svg.clientHeight / 2));
+  $('zFit').addEventListener('click', resetView);
+
+  // ------------------------------------------------------------------ interaction
+  svg.addEventListener('click', (e) => {
+    if (suppressClick) return;
+    const g = e.target.closest('.node');
+    if (!g) return;
+    const id = g.getAttribute('data-id');
+    if (S.standAt && S.M.byId.get(id) && S.M.byId.get(id).kind === 'place') { setStand(id); }
+    select(id);
+    focusNode(id, false);
+  });
+  svg.addEventListener('pointerover', (e) => {
+    const g = e.target.closest('.node');
+    const id = g ? g.getAttribute('data-id') : null;
+    if (id !== S.hover) { S.hover = id; emphasis(); }
+  });
+  svg.addEventListener('pointerleave', () => { if (S.hover) { S.hover = null; emphasis(); } });
+
+  function columns() {
+    const M = S.M, L = S.L;
+    return [
+      M.axioms.filter((a) => L.band.has(a.id)).map((a) => a.id),
+      M.principles.map((p) => p.id),
+      L.routeOrder.slice(),
+      L.rows.filter((r) => r.t !== 'sect').map((r) => (r.t === 'place' ? r.n.id : r.id)),
+    ];
+  }
+  function ensureFocusable() {
+    const cols = columns();
+    const all = cols.flat();
+    if (!S.focusId || !all.includes(S.focusId)) S.focusId = S.selected && all.includes(S.selected) ? S.selected : all[0];
+    for (const [id, rec] of S.nodes) if (rec.kind !== 'sect') rec.g.setAttribute('tabindex', id === S.focusId ? '0' : '-1');
+  }
+  function focusNode(id, move) {
+    S.focusId = id;
+    ensureFocusable();
+    const rec = S.nodes.get(id);
+    if (rec && move !== false) rec.g.focus({ preventScroll: true });
+  }
+  svg.addEventListener('keydown', (e) => {
+    const g = e.target.closest && e.target.closest('.node');
+    if (!g) return;
+    const id = g.getAttribute('data-id');
+    const cols = columns();
+    const ci = cols.findIndex((c) => c.includes(id));
+    if (ci < 0) return;
+    const col = cols[ci], i = col.indexOf(id);
+    const yOf = (x) => S.L.y.get(x);
+    let next = null;
+    if (e.key === 'ArrowDown') next = col[Math.min(col.length - 1, i + 1)];
+    else if (e.key === 'ArrowUp') next = col[Math.max(0, i - 1)];
+    else if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+      let cj = ci + (e.key === 'ArrowRight' ? 1 : -1);
+      while (cj >= 0 && cj < cols.length && !cols[cj].length) cj += e.key === 'ArrowRight' ? 1 : -1;
+      if (cj >= 0 && cj < cols.length) {
+        const y = yOf(id);
+        next = cols[cj].reduce((best, x) => (Math.abs(yOf(x) - y) < Math.abs(yOf(best) - y) ? x : best), cols[cj][0]);
+      }
+    } else if (e.key === 'Home') next = col[0];
+    else if (e.key === 'End') next = col[col.length - 1];
+    else if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      if (S.standAt && S.M.byId.get(id) && S.M.byId.get(id).kind === 'place') setStand(id);
+      select(id); return;
+    } else return;
+    e.preventDefault();
+    if (next) { focusNode(next); S.hover = next; emphasis(); }
+  });
+  svg.addEventListener('focusout', () => { if (S.hover && !drag) { S.hover = null; emphasis(); } });
+  document.addEventListener('keydown', (e) => {
+    if (e.target.closest && e.target.closest('input, select, textarea')) return;
+    if (e.key === 'Escape') {
+      if (S.selected) select(null); else if (S.standAt) setStand(null);
+    } else if ((e.key === '+' || e.key === '=') && !e.metaKey && !e.ctrlKey) zoomAt(1.25, svg.clientWidth / 2, svg.clientHeight / 2);
+    else if (e.key === '-' && !e.metaKey && !e.ctrlKey) zoomAt(0.8, svg.clientWidth / 2, svg.clientHeight / 2);
+    else if (e.key === '0' && !e.metaKey && !e.ctrlKey) resetView();
+  });
+
+  function select(id) {
+    S.selected = id;
+    emphasis();
+    renderPanel();
+    const n = id && (S.M.byId.get(id) || (id.startsWith('ghost:') && S.M.byId.get(id.slice(6))));
+    $('announce').textContent = n ? 'Selected ' + n.kind + ' ' + (n.name || n.id) : 'Showing the overview';
+  }
+  panel.addEventListener('click', (e) => {
+    const b = e.target.closest('[data-go]');
+    if (!b) return;
+    const id = b.getAttribute('data-go');
+    if (id === '') { select(null); return; }
+    select(id);
+    if (S.nodes.has(id)) focusNode(id, false);
+  });
+
+  // toggles
+  $('tEnforced').addEventListener('click', (e) => {
+    S.enforcedOnly = !S.enforcedOnly;
+    e.currentTarget.setAttribute('aria-pressed', String(S.enforcedOnly));
+    emphasis();
+  });
+  $('tStand').addEventListener('click', () => {
+    if (S.standAt) { setStand(null); return; }
+    const M = S.M;
+    const sel = S.selected && M.byId.get(S.selected);
+    const first = M.dirs.concat(M.roots)[0];
+    setStand(sel && sel.kind === 'place' ? sel.id : (first && first.id));
+    if (S.standAt) select(S.standAt);
+  });
+  $('standPick').addEventListener('change', (e) => { setStand(e.target.value); select(e.target.value); });
+  function setStand(id) {
+    S.standAt = id || null;
+    $('tStand').setAttribute('aria-pressed', String(!!S.standAt));
+    renderStandPicker();
+    emphasis();
+    if (!S.standAt && S.selected) renderPanel();
+  }
+  function renderStandPicker() {
+    const pick = $('standPick');
+    if (!S.M) return;
+    pick.hidden = !S.standAt;
+    const opts = S.M.dirs.concat(S.M.roots).map((p) => '<option value="' + esc(p.id) + '"' + (p.id === S.standAt ? ' selected' : '') + '>' + esc(S.M.pathOf(p) + (p.is_dir ? '/' : '')) + '</option>').join('');
+    if (pick.innerHTML !== opts) pick.innerHTML = opts;
+    if (S.standAt) pick.value = S.standAt;
+  }
+
+  // ------------------------------------------------------------------ coverage strip
+  function renderCoverage() {
+    const g = S.graph, M = S.M;
+    const cov = g.coverage || {};
+    const total = cov.principles != null ? cov.principles : M.principles.length;
+    const by = Object.assign({}, cov.by_level || {});
+    if (!cov.by_level) for (const p of M.principles) by[M.eff(p)] = (by[M.eff(p)] || 0) + 1;
+    const beyond = cov.enforced_beyond_words != null ? cov.enforced_beyond_words : total - (by.prose || 0);
+    let bar = '';
+    for (const lv of LEVELS) {
+      const n = by[lv] || 0;
+      if (!n) continue;
+      const op = { block: 1, ask: 0.8, check: 0.62, remind: 0.46, advise: 0.3, prose: 0 }[lv];
+      bar += '<span class="' + lv + '" style="flex:' + n + ';' + (lv === 'prose' ? '' : 'opacity:' + op) + '" title="' + esc(lv + ': ' + n) + '"></span>';
+    }
+    let levels = '';
+    for (const lv of LEVELS) {
+      levels += '<li><button type="button" class="lvl" data-level="' + lv + '" title="' + esc(MEANING[lv]) + '">' + meterSVG(lv, lv) + '<span>' + (lv === 'prose' ? 'only words' : lv) + '</span><b>' + (by[lv] || 0) + '</b></button></li>';
+    }
+    const gaps = M.gaps.length;
+    const filesTotal = cov.files_total != null ? cov.files_total : (g.repository && g.repository.files_total);
+    const entry = g.entry || {};
+    let meta = '';
+    if (cov.files_governed != null && filesTotal != null) meta += '<span><span class="n">' + cov.files_governed + '</span> of <span class="n">' + filesTotal + '</span> files under a route</span>';
+    const live = cov.routes_live != null ? cov.routes_live : M.routes.length - M.dead.size;
+    const deadN = cov.routes_dead != null ? cov.routes_dead : M.dead.size;
+    meta += '<span><span class="n">' + live + '</span> routes live' + (deadN ? ', <span class="n">' + deadN + '</span> ' + (deadN === 1 ? 'matches' : 'match') + ' nothing' : '') + '</span>';
+    if (entry.used != null && entry.budget != null) meta += '<span' + (entry.used > entry.budget ? ' class="gapnote"' : '') + '>entry card <span class="n">' + entry.used + '</span> of <span class="n">' + entry.budget + '</span> lines</span>';
+    if (gaps) meta += '<button type="button" class="gaps-btn" data-go="">' + plural(gaps, 'gap') + '</button>';
+    $('coverage').innerHTML =
+      '<div class="cov-main"><div class="head"><b>' + beyond + '</b> of <b>' + total + '</b> principles enforced beyond words</div><div class="cov-bar" aria-hidden="true">' + bar + '</div></div>' +
+      '<ul class="levels" aria-label="Principles by the level they actually hold at">' + levels + '</ul>' +
+      '<div class="cov-meta">' + meta + '</div>';
+  }
+  $('coverage').addEventListener('pointerover', (e) => { const b = e.target.closest('.lvl'); const lv = b ? b.dataset.level : null; if (lv !== S.levelHover) { S.levelHover = lv; emphasis(); } });
+  $('coverage').addEventListener('pointerleave', () => { S.levelHover = null; emphasis(); });
+  $('coverage').addEventListener('focusin', (e) => { const b = e.target.closest('.lvl'); S.levelHover = b ? b.dataset.level : null; emphasis(); });
+  $('coverage').addEventListener('focusout', () => { S.levelHover = null; emphasis(); });
+  $('coverage').addEventListener('click', (e) => { if (e.target.closest('.gaps-btn')) { select(null); const h = panel.querySelector('#gaps-h'); if (h) h.scrollIntoView({ block: 'start', behavior: reduceMotion ? 'auto' : 'smooth' }); } });
+
+  // ------------------------------------------------------------------ panel
+  function rowBtn(id, inner, sub) {
+    return '<li><button type="button" class="row-btn" data-go="' + esc(id) + '"><span class="txt">' + inner + '</span>' + (sub ? '<span class="sub">' + esc(sub) + '</span>' : '') + '</button></li>';
+  }
+  function principleRow(p) { return rowBtn(p.id, meterSVG(S.M.eff(p), p.declared) + ' &nbsp;' + esc(p.name), p.id); }
+  function sourcesHTML(refs) {
+    if (!refs || !refs.length) return '';
+    let out = '<h3>Sources</h3>';
+    for (const r of refs) {
+      const s = S.M.byId.get('src:' + r.ref) || {};
+      const anchor = r.at && /^[a-z0-9-]+$/.test(r.at);
+      const url = s.url ? s.url + (anchor ? '#' + r.at : '') : '';
+      const title = s.title || s.name || r.ref;
+      const meta = [s.publisher, s.date, !anchor && r.at ? r.at : ''].filter(Boolean).join(' · ');
+      out += '<div class="src"><div class="t">' + (url ? '<a href="' + esc(url) + '" target="_blank" rel="noopener noreferrer">' + esc(title) + '</a>' : esc(title)) + '</div>' +
+        (meta ? '<div class="m">' + esc(meta) + '</div>' : '') +
+        (r.quote ? '<blockquote>“' + esc(r.quote) + '”</blockquote>' : '') + '</div>';
+    }
+    return out;
+  }
+  function placeName(id) { const p = S.M.byId.get(id); return p ? S.M.pathOf(p) + (p.is_dir ? '/' : '') : id; }
+  function gapText(gp) {
+    const M = S.M;
+    const n = gp.id && (M.byId.get(gp.id) || M.byId.get('place:' + gp.id) || M.byId.get('route:' + gp.id));
+    const name = n ? (n.kind === 'place' ? placeName(n.id) : n.name) : (gp.path || gp.id || '');
+    const t = {
+      prose_only: [name, 'Only words: nothing delivers or enforces it beyond the entry card.'],
+      missing_enforcer: [name, gp.detail || 'Names an enforcer that does not exist.'],
+      dead_route: ['Route ' + name, gp.detail || 'Matches no file.'],
+      unrouted_sensitive: [name, gp.detail || 'Sensitive, but no route covers it.'],
+      stale_projection: [(gp.path || name) + ' differs from a fresh build', gp.detail],
+      over_budget: ['The entry card is over its line budget', gp.detail],
+    }[gp.kind] || [name || gp.kind, gp.detail];
+    let target = n ? n.id : '';
+    if (n && n.kind === 'route' && M.dead.has(n.id)) target = n.id;
+    return { head: t[0], detail: t[1] && t[1] !== t[0] ? t[1] : '', kind: gp.kind.replace(/_/g, ' '), target: target };
+  }
+  function overviewHTML() {
+    const g = S.graph, M = S.M, d = g.doctrine || {};
+    let h = '<h2>' + esc(d.name || 'Doctrine') + '</h2>';
+    if (d.summary) h += '<p>' + esc(d.summary) + '</p>';
+    h += '<h3>How to read it</h3>' +
+      '<p>Read left to right: the axioms, the principles that serve them, the routes that carry principles to places, and the places in the repository. A line into a place means an agent working there receives that principle.</p>' +
+      '<p>The five cells beside each principle show how strongly it holds. Filled cells are mechanisms that exist; empty cells mean only words. Hover to trace a mark, click to read it.</p>';
+    h += '<h3>Enforcement</h3><ul class="legend">';
+    for (const lv of LEVELS) h += '<li>' + meterSVG(lv, lv) + '<span class="lv">' + (lv === 'prose' ? 'prose' : lv) + '</span><span>' + esc(MEANING[lv]) + '</span></li>';
+    h += '<li><svg class="meter" width="31" height="12" viewBox="0 0 31 12" aria-hidden="true"><rect class="on" x="0.5" y="0.5" width="4.5" height="11" rx="0.8"/><rect class="on" x="7" y="0.5" width="4.5" height="11" rx="0.8"/><rect class="owed" x="13.5" y="0.5" width="4.5" height="11" rx="0.8"/><rect class="owed" x="20" y="0.5" width="4.5" height="11" rx="0.8"/><rect class="off" x="26.5" y="0.5" width="4.5" height="11" rx="0.8"/></svg><span class="lv">owed</span><span>Declared stronger than what exists.</span></li></ul>';
+    if (M.gaps.length) {
+      h += '<h3 id="gaps-h">Gaps</h3><ul>';
+      for (const gp of M.gaps) {
+        const t = gapText(gp);
+        h += '<li><button type="button" class="gap-item"' + (t.target ? ' data-go="' + esc(t.target) + '"' : '') + '><span class="k">' + esc(t.kind) + '</span>' + esc(t.head) + (t.detail ? '<br><span style="color:var(--muted)">' + esc(t.detail) + '</span>' : '') + '</button></li>';
+      }
+      h += '</ul>';
+    }
+    h += entryHTML(true);
+    h += '<h3>About this map</h3><p class="mono" style="color:var(--muted)">' + esc(d.source || 'doctrine.toml') + (d.version ? ' · ' + esc(d.version) : '') + (g.generated_at ? '<br>built ' + esc(fmtDate(g.generated_at)) : '') + (d.sha256 ? '<br>sha256 ' + esc(String(d.sha256).slice(0, 12)) : '') + '</p>';
+    return h;
+  }
+  function entryHTML(collapsed) {
+    const e = S.graph.entry || {};
+    if (!e.lines || !e.lines.length) return '';
+    return '<h3>Entry card</h3><details class="entry"' + (collapsed ? '' : '') + '><summary>Every agent reads this on arrival: ' + plural(e.lines.length, 'line') + (e.budget ? ' of a ' + e.budget + '-line budget' : '') + '</summary><pre>' + esc(e.lines.join('\n')) + '</pre></details>';
+  }
+  function axiomHTML(a) {
+    const M = S.M;
+    let h = '<div class="kind"><span>Axiom ' + esc(a.id) + '</span></div><h2>' + esc(a.name) + '</h2>';
+    if (a.plain) h += '<p class="lead">' + esc(a.plain) + '</p>';
+    if (a.clause) h += '<h3>Clause</h3><div class="clause">' + esc(a.clause) + '</div>';
+    if (a.anti) h += '<h3>Rejects</h3><p class="anti">' + esc(a.anti) + '</p>';
+    const ps = M.principles.filter((p) => (M.prAx.get(p.id) || []).includes(a.id));
+    if (ps.length) h += '<h3>Principles that serve it</h3><ul>' + ps.map(principleRow).join('') + '</ul>';
+    return h + sourcesHTML(a.sources);
+  }
+  function principleHTML(p) {
+    const M = S.M, eff = M.eff(p), dec = STRENGTH[p.declared] != null ? p.declared : eff;
+    let h = '<div class="kind"><span>Principle ' + esc(p.id) + '</span></div><h2>' + esc(p.name) + '</h2>';
+    if (p.one) h += '<p class="lead">' + esc(p.one) + '</p>';
+    if (p.three) h += '<p>' + esc(p.three) + '</p>';
+    if (p.anti) h += '<h3>Rejects</h3><p class="anti">' + esc(p.anti) + '</p>';
+    h += '<h3>Enforcement</h3><div class="enforce-pair">' +
+      meterSVG(eff, dec) + '<span><span class="lab">holds at</span> <span class="mono">' + (eff === 'prose' ? 'prose (only words)' : eff) + '</span> · <span class="lab">declared</span> <span class="mono">' + esc(dec) + '</span></span></div>';
+    if (STRENGTH[dec] > STRENGTH[eff]) h += '<p class="gapnote" style="margin-top:8px">The doctrine declares ' + esc(dec) + ', but only ' + esc(eff) + ' exists.</p>';
+    if (p.enforcers && p.enforcers.length) {
+      h += '<div style="margin-top:10px">';
+      for (const e of p.enforcers) {
+        const n = M.byId.get('enf:' + e.ref) || {};
+        const missing = e.status && e.status !== 'present';
+        const bits = [n.type, n.level, n.file].filter(Boolean).join(' · ');
+        h += '<div class="enf"><span class="ref">' + esc(e.ref) + '</span><span class="st' + (missing ? ' missing' : '') + '">' + (missing ? 'missing' : 'present') + (bits && !missing ? ' · ' + esc(bits) : '') + '</span></div>';
+      }
+      h += '</div>';
+    } else h += '<p style="margin-top:8px">No enforcer is named. This principle is written down only.</p>';
+    const routes = M.prRoutes.get(p.id) || [];
+    h += '<h3>Where it is delivered</h3>';
+    if (M.global.has(p.id)) h += '<p>No route carries it to a particular place, so it applies everywhere through the entry card' + (STRENGTH[eff] > 1 ? ' and the hooks that enforce it' : '') + '.</p>';
+    for (const r of routes) {
+      const rn = M.byId.get(r);
+      const pls = M.routePl.get(r) || [];
+      h += '<div class="route-block"><button type="button" class="row-btn" data-go="' + esc(r) + '"><span class="txt rn mono">route ' + esc(rn.name || r) + '</span><span class="sub">' + (M.dead.has(r) ? 'matches no file' : plural(pls.length, 'place')) + '</span></button>';
+      if (pls.length) h += '<ul>' + pls.map((pl) => rowBtn(pl, '<span class="mono">' + esc(placeName(pl)) + '</span>', plural((M.byId.get(pl) || {}).files || 0, 'file'))).join('') + '</ul>';
+      h += '</div>';
+    }
+    const axs = M.prAx.get(p.id) || [];
+    if (axs.length) h += '<h3>Serves</h3><ul>' + axs.map((a) => rowBtn(a, esc(M.byId.get(a).name), a)).join('') + '</ul>';
+    return h + sourcesHTML(p.sources);
+  }
+  function routeHTML(r) {
+    const M = S.M, isDead = M.dead.has(r.id);
+    let h = '<div class="kind"><span>Route</span></div><h2 class="mono" style="font-size:17px">' + esc(r.name || r.id) + '</h2>';
+    if (r.reminder) h += '<p class="reminder">' + esc(r.reminder) + '</p>';
+    const on = (r.on || []).map((o) => ON_WORDS[o] || o);
+    if (on.length) h += '<p>Delivered once per session when an agent ' + esc(on.join(' or ')) + ' in the places it governs.</p>';
+    if (isDead) h += '<p class="gapnote">This route matches no file in the repository, so nothing receives it.</p>';
+    h += '<h3>Paths</h3><p class="mono">' + (r.paths || []).map(esc).join('<br>') + '</p>';
+    const ps = (M.routePr.get(r.id) || []).map((id) => M.byId.get(id)).filter(Boolean);
+    if (ps.length) h += '<h3>Principles it carries</h3><ul>' + ps.map(principleRow).join('') + '</ul>';
+    const pls = M.routePl.get(r.id) || [];
+    if (pls.length) h += '<h3>Places it governs</h3><ul>' + pls.map((pl) => rowBtn(pl, '<span class="mono">' + esc(placeName(pl)) + '</span>', plural((M.byId.get(pl) || {}).files || 0, 'file'))).join('') + '</ul>';
+    if (r.matches != null) h += '<p style="margin-top:10px;color:var(--muted)">' + plural(r.matches, 'file') + ' matched.</p>';
+    return h;
+  }
+  function placeHTML(pl) {
+    const M = S.M;
+    const routes = M.plRoutes.get(pl.id) || [];
+    let h = '<div class="kind"><span>Place</span><span>' + plural(pl.files || 0, 'file') + '</span>' + (pl.sensitive ? '<span>sensitive</span>' : '') + '</div><h2 class="mono" style="font-size:17px">' + esc(placeName(pl.id)) + '</h2>';
+    if (S.standAt === pl.id) h += '<p style="color:var(--muted)">Standing here. Everything not delivered to this place has receded.</p>';
+    h += '<h3>An agent working here receives</h3>';
+    const e = S.graph.entry || {};
+    h += '<p><b style="color:var(--ink);font-weight:600">1. The entry card</b>, on arrival: ' + plural((e.lines || []).length, 'line') + ' naming every axiom and principle in one line each.</p>';
+    if (routes.length) {
+      h += '<p><b style="color:var(--ink);font-weight:600">2. ' + (routes.length === 1 ? 'One route' : routes.length + ' routes') + '</b>, as factual reminders when it works here:</p>';
+      for (const r of routes) {
+        const rn = M.byId.get(r);
+        const on = (rn.on || []).map((o) => ON_WORDS[o] || o).join(' or ');
+        h += '<div class="route-block"><button type="button" class="row-btn" data-go="' + esc(r) + '"><span class="txt"><span class="rn">route ' + esc(rn.name || r) + '</span><br><span class="on">' + esc(on ? 'delivered when an agent ' + on + ' here' : '') + '</span></span></button>';
+        if (rn.reminder) h += '<p class="reminder">' + esc(rn.reminder) + '</p>';
+        h += '<ul>' + (M.routePr.get(r) || []).map((id) => M.byId.get(id)).filter(Boolean).map(principleRow).join('') + '</ul></div>';
+      }
+    } else {
+      h += '<p' + (pl.sensitive ? ' class="gapnote"' : '') + '>' + (pl.sensitive ? 'This place is sensitive, but no route covers it. ' : 'No route covers this place. ') + 'An agent here receives the entry card and nothing specific to this place.</p>';
+    }
+    const glob = M.principles.filter((p) => M.global.has(p.id));
+    if (glob.length) h += '<p style="margin-top:14px"><b style="color:var(--ink);font-weight:600">' + (routes.length ? '3' : '2') + '. Principles that apply everywhere</b>, through the entry card and repository-wide hooks:</p><ul>' + glob.map(principleRow).join('') + '</ul>';
+    h += entryHTML(true);
+    return h;
+  }
+  function renderPanel() {
+    if (!S.M) return;
+    const M = S.M, id = S.selected;
+    let n = id ? M.byId.get(id) : null;
+    if (id && !n && id.startsWith('ghost:')) n = M.byId.get(id.slice(6));
+    let h = '';
+    if (n) h += '<button type="button" class="back" data-go="">← Overview</button>';
+    if (!n) h += overviewHTML();
+    else if (n.kind === 'axiom') h += axiomHTML(n);
+    else if (n.kind === 'principle') h += principleHTML(n);
+    else if (n.kind === 'route') h += routeHTML(n);
+    else if (n.kind === 'place') h += placeHTML(n);
+    else h += overviewHTML();
+    const scroll = S.panelFor === id ? panel.scrollTop : 0;
+    panel.innerHTML = h;
+    panel.scrollTop = scroll;
+    S.panelFor = id;
+  }
+
+  function renderHeader() {
+    const g = S.graph, d = g.doctrine || {}, r = g.repository || {};
+    $('docName').textContent = d.name || 'Doctrine map';
+    $('docVer').textContent = d.version ? 'v' + d.version : '';
+    $('repoName').textContent = r.name ? r.name + (r.commit ? ' @ ' + String(r.commit).slice(0, 7) : '') : '';
+    document.title = (d.name ? d.name + ' · ' : '') + 'Doctrine map';
+    renderStatus();
+  }
+  function renderStatus() {
+    const st = $('status'), t = $('statusText');
+    st.classList.toggle('live', S.live);
+    const when = S.graph && S.graph.generated_at ? fmtDate(S.graph.generated_at) : '';
+    if (S.origin === 'sample') t.textContent = 'Sample data';
+    else if (S.live) t.textContent = 'Live · redraws on each rebuild' + (S.lastRedraw ? ' · last ' + S.lastRedraw : '');
+    else if (S.origin === 'inline') t.textContent = 'Snapshot · built ' + when;
+    else t.textContent = 'Built ' + when;
+  }
+
+  // ------------------------------------------------------------------ data
+  async function loadGraph() {
+    const inline = $('doctrine-graph');
+    const raw = inline && inline.textContent.trim();
+    if (raw) {
+      try { return { graph: JSON.parse(raw), origin: 'inline' }; } catch (err) { /* fall through to fetch */ }
+    }
+    for (const [url, origin] of [['./graph.json', 'served'], ['./examples/graph.sample.json', 'sample']]) {
+      try {
+        const res = await fetch(url, { cache: 'no-store' });
+        if (res.ok) return { graph: await res.json(), origin: origin };
+      } catch (err) { /* try the next source */ }
+    }
+    return null;
+  }
+  function show(graph) {
+    S.graph = graph;
+    const first = !S.M;
+    if (S.selected && !graph.nodes.some((n) => n.id === S.selected) && !(S.selected.startsWith('ghost:'))) S.selected = null;
+    if (S.standAt && !graph.nodes.some((n) => n.id === S.standAt)) setStand(null);
+    S.M = buildModel(graph);
+    renderHeader();
+    renderCoverage();
+    render(!first);
+    renderPanel();
+  }
+  async function refetch() {
+    try {
+      const res = await fetch('./graph.json', { cache: 'no-store' });
+      if (!res.ok) return;
+      const g = await res.json();
+      const d = new Date();
+      S.lastRedraw = String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0') + ':' + String(d.getSeconds()).padStart(2, '0');
+      show(g);
+    } catch (err) { /* keep the current picture */ }
+  }
+  function listen() {
+    if (S.origin !== 'served' || !('EventSource' in window)) return;
+    let opened = false;
+    const es = new EventSource('./events');
+    es.onopen = () => { const again = opened; opened = true; S.live = true; renderStatus(); if (again) refetch(); };
+    es.onmessage = () => refetch();
+    es.onerror = () => { S.live = false; renderStatus(); if (!opened) es.close(); };
+  }
+
+  let resizeTimer = 0;
+  window.addEventListener('resize', () => { clearTimeout(resizeTimer); resizeTimer = setTimeout(() => { if (S.graph) render(false); }, 80); });
+
+  (async function start() {
+    const got = await loadGraph();
+    if (!got) {
+      const m = $('message');
+      m.hidden = false;
+      m.innerHTML = '<div><p style="color:var(--ink);font-weight:600">No doctrine graph found.</p><p>Run <span class="mono">doctrine.py map --serve</span> for a live map, or <span class="mono">doctrine.py map --out</span> for a single file with the graph inside.</p></div>';
+      $('statusText').textContent = 'No data';
+      return;
+    }
+    S.origin = got.origin;
+    show(got.graph);
+    listen();
+  })();
+})();
+</script>
+</body>
+</html>

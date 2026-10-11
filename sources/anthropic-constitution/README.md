@@ -1,4 +1,4 @@
-# Constitution clauses
+# Claude's constitution: clauses
 
 `clauses.json` holds 38 verbatim excerpts from Claude's constitution. Each has an id, the title of its section and an anchor URL into the source page.
 
@@ -12,8 +12,8 @@
 ## Re-extract and verify
 
 ```
-python3 tools/extract_clauses.py constitution/source/constitution.md /tmp/clauses.json
-cmp /tmp/clauses.json constitution/clauses.json
+python3 sources/anthropic-constitution/extract_clauses.py sources/anthropic-constitution/source/constitution.md /tmp/clauses.json
+cmp /tmp/clauses.json sources/anthropic-constitution/clauses.json
 ```
 
 The extractor finds each clause by a start phrase and an end phrase, and stops with an error if either is missing. To check the clauses against the live page, make a fresh markdown rendering of the source URL and run the same two commands on it. Any difference means the page has changed.

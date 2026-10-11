@@ -1,0 +1,5 @@
+# Local state written by doctrine-map: session records, the built graph and the mistakes log.
+sessions/
+graph.json
+mistakes.jsonl
+__pycache__/
