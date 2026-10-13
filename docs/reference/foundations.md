@@ -60,6 +60,6 @@ material, "integrates with" for an exercised interface, and "extension" for an
 actual installed extension. None means endorsement or an upstream safety guarantee.
 
 The reference doctrine's existing source entries own its axiom/principle citations.
-The [Constitution source notes](../sources/anthropic-constitution/README.md) map
+The [Constitution source notes](../../sources/anthropic-constitution/README.md) map
 selected ideas to specific local rules. Keep research documents and large PDFs
 out of the mandatory agent entry card and runtime dependency path.

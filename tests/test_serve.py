@@ -66,9 +66,18 @@ class Serve(RepoTestCase):
     def test_a_broken_edit_keeps_the_last_good_graph(self):
         path = self.root / ".doctrine" / "doctrine.toml"
         before = self.get("/graph.json")[2]
-        with contextlib.redirect_stderr(io.StringIO()) as err:
+        reported = threading.Event()
+
+        class Diagnostic(io.StringIO):
+            def write(self, text):
+                size = super().write(text)
+                if text.endswith("\n") and "keeping the last good graph" in self.getvalue():
+                    reported.set()
+                return size
+
+        with contextlib.redirect_stderr(Diagnostic()) as err:
             path.write_text("this is [not toml")
-            time.sleep(0.4)
+            self.assertTrue(reported.wait(10), "watcher did not report the rejected TOML edit")
         self.assertIn("keeping the last good graph", err.getvalue())
         self.assertEqual(self.get("/graph.json")[2], before)
 

@@ -231,6 +231,12 @@ class EntryOnStartup(HookCase):
 class ModeOverrides(HookCase):
     hooks_table = 'irreversible = "block"\nmasked_status = "advise"\nreminders = "off"\nsecrets = "ask"\nrule_files = "off"'
 
+    def test_block_reason_does_not_describe_an_approval_prompt(self):
+        out = self.bash("npm publish")
+        self.assertEqual(self.decision(out), "deny")
+        self.assertIn("publishes a package", self.reason(out))
+        self.assertNotIn("asks first", self.reason(out))
+
     def test_modes(self):
         self.assertEqual(self.decision(self.bash("git push --force")), "deny")
         out = self.bash("pytest | tail")
@@ -365,6 +371,10 @@ class Wiring(unittest.TestCase):
                 self.assertEqual(len(tools), len(set(tools)), check)
                 self.assertTrue(set(tools) <= {"Bash", "Edit", "Write", "MultiEdit", "NotebookEdit"}, check)
                 self.assertIn("Bash", tools, check)
+            if check == "unsupported_claim":
+                expected.add("receipt_events")
+                self.assertEqual(spec["receipt_events"], ["PostToolUse", "PostToolUseFailure"])
+                self.assertTrue(all(event in hooks.WIRING for event in spec["receipt_events"]))
             self.assertEqual(set(spec), expected, check)
             self.assertIn(spec["event"], hooks.WIRING, check)
 

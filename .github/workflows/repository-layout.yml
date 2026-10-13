@@ -15,6 +15,6 @@ jobs:
         with:
           python-version: '3.11'
       - name: Directory roles and agent routes
-        run: python3 skills/repository-organization/scripts/check_layout.py
+        run: python3 skills/repository-organization/scripts/check_layout.py --config docs/maintainers/repository-layout.json
       - name: Misplacement, staged contents and compatibility fixtures
         run: python3 skills/repository-organization/scripts/test_check_layout.py

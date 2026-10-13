@@ -147,6 +147,24 @@ class Guards(unittest.TestCase):
             with self.subTest(command=command):
                 self.assertFalse(self.asks(command))
 
+    def test_publish_dry_run_must_be_enabled(self):
+        # These are parser input only: no publisher is launched.
+        for command in ("npm publish --dry-run=false", "npm publish --dry-run false",
+                        "npm publish --dry-run --no-dry-run", "npm publish --dry-run --dry-run=false",
+                        "npm publish --dry-run --no-dry-run=true",
+                        "npm publish -- --dry-run", "npm publish -n", "poetry publish -n",
+                        "twine upload -n dist/*", "python3 -m twine upload -n dist/*",
+                        "twine upload --dry-run dist/*", "gem push -n demo.gem"):
+            with self.subTest(command=command):
+                self.assertTrue(self.asks(command), command)
+        for command in ("npm publish --dry-run", "npm publish --dry-run=true",
+                        "npm publish --dry-run true", "npm publish --dry-run=false --dry-run",
+                        "npm publish --dry-run --no-dry-run=false",
+                        "pnpm publish --dry-run", "yarn npm publish --dry-run", "bun publish --dry-run",
+                        "cargo publish --dry-run", "poetry publish --dry-run", "uv publish --dry-run"):
+            with self.subTest(command=command):
+                self.assertFalse(self.asks(command), command)
+
     def test_relative_targets_use_the_cd_and_cwd(self):
         self.assertTrue(self.asks("rm -rf ..", cwd=self.root / "sub"), "the repository root from a subdirectory")
         self.assertFalse(self.asks("rm -rf old", cwd=self.root / "sub"))

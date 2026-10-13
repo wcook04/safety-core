@@ -33,7 +33,7 @@ def build(out: Path):
                                'reminder = "Check the paths when a route matches no files."\non = ["edit"]\n')
             graph, _ = doctrine.build_graph(doctrine.open_repo(source))
             (out / (name + '.json')).write_text(json.dumps(graph, indent=2) + '\n')
-            html = doctrine.inject((ROOT / 'map.html').read_text(), graph)
+            html = doctrine.inject((ROOT / 'viewer/map.html').read_text(), graph)
             (out / (name + '.html')).write_text(html)
             (out / (name + '-light.html')).write_text(html.replace('<html lang="en">', '<html lang="en" data-theme="light">'))
             (out / (name + '-dark.html')).write_text(html.replace('@media (prefers-color-scheme: dark)', '@media all'))

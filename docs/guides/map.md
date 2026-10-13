@@ -5,7 +5,7 @@ principles a route associates with which parts of the code, what mechanism is co
 for each principle, and where the configuration differs from what the doctrine declares.
 It shows configuration. It does not show what an agent did.
 
-![The map tracing the tests route in demo-repo, light theme](img/map-20261013-light.png)
+![The map tracing the tests route in demo-repo, light theme](../img/map-20261013-light.png)
 
 ## Opening it
 
@@ -13,7 +13,7 @@ It shows configuration. It does not show what an agent did.
   save doctrine.toml or move files, and keeps your selection, zoom and position.
 - `doctrine.py map --out doctrine-map.html` writes a single file with the graph inside.
   It opens from disk with no network access.
-- If you open `map.html` with no graph, it shows the sample in
+- If you serve the checkout and open `viewer/map.html` with no graph, it shows the sample in
   `examples/graph.sample.json`. The header then says "Sample data".
 
 ## The four columns
@@ -141,13 +141,13 @@ light variant (the viewer’s existing light theme) and a dark variant (its dark
 rule enabled), so captures do not depend on desktop preferences.
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="img/map-empty-20261013-dark.jpg">
-  <img src="img/map-empty-20261013-light.jpg" alt="An empty route showing its two principles and zero matched files" width="1280">
+  <source media="(prefers-color-scheme: dark)" srcset="../img/map-empty-20261013-dark.jpg">
+  <img src="../img/map-empty-20261013-light.jpg" alt="An empty route showing its two principles and zero matched files" width="1280">
 </picture>
 
 <picture>
-  <source media="(prefers-color-scheme: dark)" srcset="img/map-phone-20261013-dark.jpg">
-  <img src="img/map-phone-20261013-light.jpg" alt="The phone route selector with readable principles and matched places, with route details below" width="390">
+  <source media="(prefers-color-scheme: dark)" srcset="../img/map-phone-20261013-dark.jpg">
+  <img src="../img/map-phone-20261013-light.jpg" alt="The phone route selector with readable principles and matched places, with route details below" width="390">
 </picture>
 
 These additional captures use the same demo source plus the declared empty-route
@@ -156,16 +156,16 @@ Run `node scripts/test_map_model.js` for lossless aggregation and old-snapshot f
 
 ## For the engine
 
-`map.html` is one self-contained file: the CSS and JavaScript are inline and it makes no
+`viewer/map.html` is one self-contained file: the CSS and JavaScript are inline and it makes no
 external requests. It reads only `doctrine-map/graph@1` (see
-[GRAPH_SCHEMA.md](GRAPH_SCHEMA.md)) and loads it in this order:
+[GRAPH_SCHEMA.md](../reference/graph-schema.md)) and loads it in this order:
 
 1. JSON inside `<script id="doctrine-graph" type="application/json"></script>`. To
    build a static map, replace that empty element with one holding the graph. Escape
    `</` as `<\/` inside the JSON.
 2. `./graph.json`, fetched from the server. When it loads, the map also listens on
    `./events` for server-sent events and fetches the graph again on each message.
-3. `./examples/graph.sample.json`.
+3. `./examples/graph.sample.json` or `../examples/graph.sample.json` in a source checkout.
 
 ## Coverage boundary
 

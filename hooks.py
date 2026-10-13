@@ -44,7 +44,8 @@ CHECKS = {
     "receipts": {"principles": ["P6"], "level": "remind", "event": "PostToolUse", "tools": ["Bash"]},
     "edit_ledger": {"principles": ["P6"], "level": "record", "event": "PostToolUse"},
     "untrusted_content": {"principles": ["P12"], "level": "remind", "event": "PostToolUse"},
-    "unsupported_claim": {"principles": ["P6"], "level": "block", "event": "Stop"},
+    "unsupported_claim": {"principles": ["P6"], "level": "block", "event": "Stop",
+                          "receipt_events": ["PostToolUse", "PostToolUseFailure"]},
     "permission_gate": {"principles": ["P3"], "level": "advise", "event": "Stop"},
     "dirty_tree": {"principles": ["P4"], "level": "advise", "event": "Stop"},
     "unlogged_mistake": {"principles": ["P9"], "level": "advise", "event": "Stop"},
@@ -631,6 +632,30 @@ def _danger(target: str, cwd: Path, root: Path | None) -> str:
     return f"{path}, outside the project"
 
 
+def _publish_dry_run(head: str, args: list) -> bool:
+    """Recognise an enabled long dry-run option on publishers that support it.
+
+    -n is not portable: npm uses it for --no-yes and Poetry for --no-interaction.
+    Twine, flit and gem push have no supported dry-run exemption here.
+    """
+    if head not in ("npm", "pnpm", "yarn", "bun", "cargo", "poetry", "uv"):
+        return False
+    enabled = False
+    for i, arg in enumerate(args):
+        if arg == "--":
+            break
+        if arg == "--no-dry-run":
+            enabled = False
+        elif arg.startswith("--no-dry-run="):
+            enabled = arg.partition("=")[2] == "false"
+        elif arg == "--dry-run":
+            value = args[i + 1] if i + 1 < len(args) else ""
+            enabled = value != "false"
+        elif arg.startswith("--dry-run="):
+            enabled = arg.partition("=")[2] == "true"
+    return enabled
+
+
 def irreversible(words: list, cwd: Path, root: Path | None) -> str:
     """What an irreversible or publishing command will do, or ""."""
     w = bare(words)
@@ -663,7 +688,7 @@ def irreversible(words: list, cwd: Path, root: Path | None) -> str:
     publish = (head in ("npm", "pnpm", "yarn", "bun") and "publish" in pos[:2]) or (head == "twine" and pos[:1] == ["upload"])
     publish = publish or (head in ("cargo", "poetry", "uv", "flit") and pos[:1] == ["publish"]) or (head == "gem" and pos[:1] == ["push"])
     publish = publish or (re.fullmatch(r"python[0-9.]*", head) is not None and args[:3] == ["-m", "twine", "upload"])
-    if publish and not flags(args) & {"--dry-run", "-n"}:
+    if publish and not _publish_dry_run(head, args):
         return "publishes a package to a registry, where a release cannot be cleanly withdrawn"
     if head == "gh" and pos[:2] == ["repo", "create"] and "--public" in args:
         return "creates a public repository"
@@ -857,12 +882,12 @@ def pre_tool(ctx: Ctx, out: Out) -> None:
         if rel is not None:
             reminders(ctx, out, [(rel, "edit")])
             if is_rule_file(ctx, rel):
-                out.add("rule_files", f"Safety Core asks first: `{rel}` is one of the files that set the rules agents work under, "
+                out.add("rule_files", f"Safety Core: `{rel}` is one of the files that set the rules agents work under, "
                         f"so editing it changes those rules. Generated regions are rebuilt from {ctx.rel(ctx.path)} by `doctrine.py build`.")
         new, old = _new_text(tool, ti)
         found = [label for label in shapes(new) if label not in shapes(old)]
         if found and git(ctx.cwd, "check-ignore", "-q", str(target)) is None:
-            out.add("secrets", f"Safety Core asks first: the new content for `{rel or target}` holds a value shaped like "
+            out.add("secrets", f"Safety Core: the new content for `{rel or target}` holds a value shaped like "
                     f"{' and '.join(found)} (not repeated here). Credentials stay out of code and commits.", cap="ask")
     elif tool == "Read":
         rel = ctx.rel(ti.get("file_path") or "")
@@ -900,12 +925,12 @@ def bash(ctx: Ctx, out: Out, command: str) -> None:
     reminders(ctx, out, [(r, "shell") for r in shell_rels if r not in (None, ".")] + [(r, "edit") for r in write_rels if r not in (None, ".")])
     rule_hits = sorted({r for r in write_rels if r not in (None, ".") and is_rule_file(ctx, r)})
     if rule_hits:
-        out.add("rule_files", f"Safety Core asks first: this command writes {', '.join(f'`{r}`' for r in rule_hits)}, which set the rules "
+        out.add("rule_files", f"Safety Core: this command writes {', '.join(f'`{r}`' for r in rule_hits)}, which set the rules "
                 f"agents work under, so it changes those rules. `doctrine.py build` regenerates them from {ctx.rel(ctx.path)}.")
     if guards:
-        out.add("irreversible", "Safety Core asks first: " + "; ".join(guards) + ".")
+        out.add("irreversible", "Safety Core: " + "; ".join(guards) + ".")
     if skips:
-        out.add("bypass_checks", "Safety Core asks first: " + "; ".join(skips) + ". These hooks are among the checks people "
+        out.add("bypass_checks", "Safety Core: " + "; ".join(skips) + ". These hooks are among the checks people "
                 "rely on to oversee changes; if one is wrong, saying so keeps it visible.")
     for where, worktree, untracked in commit_scans if ctx.mode("secrets") != "off" else ():
         found = staged_secrets(where, worktree, untracked)

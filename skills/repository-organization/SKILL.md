@@ -6,7 +6,7 @@ description: Use for folder organization, placing new files, tree moves or new f
 # Repository organization
 
 Read this repository's entry, README, package configuration and directory owners.
-`docs/repository_layout.json` declares the root interfaces, directory responsibilities,
+`docs/maintainers/repository-layout.json` declares the root interfaces, directory responsibilities,
 required owners, executable route checks and documented compatibility exceptions.
 Choose a file's home by its consumer; do not split folders merely because of counts.
 
@@ -23,10 +23,10 @@ tests under their test owner, and documentation assets beside their guides.
 From the repository root:
 
 ```sh
-python3 skills/repository-organization/scripts/check_layout.py
+python3 skills/repository-organization/scripts/check_layout.py --config docs/maintainers/repository-layout.json
 python3 skills/repository-organization/scripts/test_check_layout.py
 # After staging the exact owned paths:
-python3 skills/repository-organization/scripts/check_layout.py --index
+python3 skills/repository-organization/scripts/check_layout.py --config docs/maintainers/repository-layout.json --index
 ```
 
 The working check sees tracked and nonignored untracked files, excluding files deleted

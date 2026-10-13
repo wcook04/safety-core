@@ -12,8 +12,6 @@
     "doctrine.py",
     "doctrine.toml",
     "hooks.py",
-    "map.html",
-    "program.md",
     "safety.py"
   ],
   "directories": {
@@ -70,28 +68,36 @@
         ".sh",
         ".md"
       ]
+    },
+    "viewer": {
+      "purpose": "self-contained map viewer source",
+      "suffixes": [
+        ".html"
+      ]
     }
   },
   "exceptions": {},
   "required_files": [
     "README.md",
     "AGENTS.md",
-    "docs/repository_layout.json",
+    "docs/maintainers/repository-layout.json",
     "skills/repository-organization/SKILL.md",
     "skills/repository-organization/scripts/check_layout.py",
     "skills/repository-organization/scripts/test_check_layout.py",
-    ".github/workflows/repository-layout.yml"
+    ".github/workflows/repository-layout.yml",
+    "viewer/map.html",
+    "scripts/check_repository_structure.py"
   ],
   "content_routes": {
     "AGENTS.md": [
       "skills/repository-organization/SKILL.md"
     ],
     "README.md": [
-      "docs/repository_layout.json",
-      "python3 skills/repository-organization/scripts/check_layout.py"
+      "docs/maintainers/repository-layout.json",
+      "python3 skills/repository-organization/scripts/check_layout.py --config docs/maintainers/repository-layout.json"
     ],
     ".github/workflows/repository-layout.yml": [
-      "python3 skills/repository-organization/scripts/check_layout.py",
+      "python3 skills/repository-organization/scripts/check_layout.py --config docs/maintainers/repository-layout.json",
       "python3 skills/repository-organization/scripts/test_check_layout.py"
     ]
   }

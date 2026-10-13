@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const vm = require('node:vm');
 const path = require('node:path');
-const html = fs.readFileSync(path.join(__dirname, '..', 'map.html'), 'utf8');
+const html = fs.readFileSync(path.join(__dirname, '..', 'viewer', 'map.html'), 'utf8');
 const between = (start, end) => html.slice(html.indexOf(start), html.indexOf(end, html.indexOf(start)));
 const context = vm.createContext({});
 vm.runInContext(between('  function natural(', '  function el(') +

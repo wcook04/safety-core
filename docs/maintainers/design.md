@@ -33,17 +33,17 @@ Coherence comes from local links that can be compiled and checked.
 
 ## The shape
 
-Everything a stranger needs is in a few files at the root:
+The small command and hook core stays at the root. The viewer and guides have separate owners:
 
 | File | Role |
 |---|---|
 | `doctrine.toml` | the reference doctrine |
 | `doctrine.py` | the tool, standard library only: init, build, check, explain, map, log-error |
 | `hooks.py` | the Claude Code hooks; its `CHECKS` and `WIRING` are literals that `doctrine.py` reads with `ast` |
-| `map.html` | the viewer, one self-contained file |
-| `program.md` | what an agent does to adopt a doctrine, and what it reports |
+| `viewer/map.html` | the viewer, one self-contained file |
+| `docs/guides/agent-setup.md` | what an agent does to adopt a doctrine, and what it reports |
 
-`init` copies the doctrine, `doctrine.py`, `hooks.py` and `map.html` into the target's
+`init` copies the doctrine, `safety.py`, `doctrine.py`, `hooks.py` and the viewer into the target's
 `.doctrine/` folder and wires the hooks into `.claude/settings.json`. Nothing is
 installed. Local state (session records, the built graph, the mistakes log) stays in
 `.doctrine/` and is ignored by git.
@@ -146,7 +146,7 @@ principles with their anti-principles, routes, and the repository's places. A li
 place means an agent working there receives the principle. Each principle's gauge shows
 its effective level, empty when it is only words. Gaps show where they are: sensitive
 places no rule covers, routes that match nothing, enforcers that do not exist.
-[MAP.md](MAP.md) describes it in full.
+[MAP.md](../guides/map.md) describes it in full.
 
 Two questions the map answers in a click:
 
