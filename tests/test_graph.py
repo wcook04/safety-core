@@ -126,6 +126,28 @@ class Graph(RepoTestCase):
         self.assertEqual(places["db/migrations"]["principles"], ["P1"])
         self.assertTrue(places["db"]["sensitive"])
 
+    def test_route_place_membership_is_exact_in_overlapping_folders(self):
+        files = dict(DEMO_FILES, **{"db/migrations/deep/x.sql": "", "db/notes.txt": ""})
+        graph, _, nodes = self.graph(self.make_repo(files))
+        links = {e["to"]: e for e in graph["edges"]
+                 if e["kind"] == "governs" and e["from"] == "route:migrations"}
+        parent = links["place:db"]
+        child = links["place:db/migrations"]
+        self.assertIn("db/notes.txt", parent["matched_files"])
+        self.assertNotIn("db/notes.txt", child["matched_files"])
+        self.assertIn("db/migrations/deep/x.sql", child["matched_files"])
+        for link in links.values():
+            self.assertEqual(link["matches"], len(link["matched_files"]))
+            self.assertEqual(len(link["matched_files"]), len(set(link["matched_files"])))
+        self.assertEqual(parent["matches"], nodes["place:db"]["files"])
+
+    def test_route_counts_exclude_unmatched_files_inside_a_place(self):
+        graph, _, _ = self.graph(self.make_repo({"tests/test_one.py": "", "tests/notes.txt": ""},
+            doctrine_text=MINI.replace('paths = ["tests/**"]', 'paths = ["tests/*.py"]')))
+        link = next(e for e in graph["edges"] if e["kind"] == "governs" and e["from"] == "route:tests")
+        self.assertEqual(link["matched_files"], ["tests/test_one.py"])
+        self.assertEqual(link["matches"], 1)
+
     def test_effective_level_comes_from_what_exists(self):
         _, _, nodes = self.graph(self.make_repo(DEMO_FILES))
         self.assertEqual((nodes["P1"]["declared"], nodes["P1"]["effective"]), ("ask", "ask"))

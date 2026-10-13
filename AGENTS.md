@@ -47,3 +47,10 @@ Where rules live:
 
 Each route's reminder and principles are in `.claude/rules/doctrine-<route>.md`. Read that file before you work in its paths.
 <!-- doctrine-map:end -->
+
+## Folder organisation
+
+For tree changes, new file families or file placement, read
+[repository-organization](skills/repository-organization/SKILL.md) and the
+[local directory roles](docs/repository_layout.json). Preserve source owners and
+public interfaces; run the layout gate on the worktree and on staged contents.

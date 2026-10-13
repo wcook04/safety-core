@@ -136,6 +136,8 @@ detection. See [hook details and limits](docs/HOOKS.md).
 | [safety.py](safety.py), [doctrine.py](doctrine.py) | Setup, generation, checks and the local map server. |
 | [hooks.py](hooks.py), [hooks/](hooks/) | Claude Code event handlers and plugin wiring. |
 | [map.html](map.html) | Self-contained viewer. |
+| [scripts/](scripts/) | Map review fixtures and viewer regression checks. |
+| [skills/repository-organization/](skills/repository-organization/) | Folder roles and the executable layout gate. |
 | [examples/](examples/) | Sample project and synthetic hook demonstration. |
 | [tests/](tests/) | Checks for setup, generation, hooks and reported coverage. |
 | [sources/](sources/), [docs/](docs/) | Attributed excerpts, adoption and design guides. |
@@ -177,3 +179,18 @@ The older `doctrine.py` command and `.doctrine/` filenames remain compatible.
 Code: [MIT](LICENSE). The Constitution is CC0; other source references and reuse
 notes are recorded in the rulebook. Safety Core is not affiliated with or endorsed
 by Anthropic, OpenAI or the upstream projects cited here.
+
+## Maintaining the tree
+
+The [directory role policy](docs/repository_layout.json) preserves root interfaces,
+source homes and documented compatibility exceptions. The
+[organisation skill](skills/repository-organization/SKILL.md) explains changes;
+CI checks placements and required agent/validation routes. From the repository root:
+
+```sh
+python3 skills/repository-organization/scripts/check_layout.py
+python3 skills/repository-organization/scripts/test_check_layout.py
+```
+
+After staging owned changes, add `--index` to the first command to check the staged
+policy and staged route contents. Ignored build outputs are outside this inventory.

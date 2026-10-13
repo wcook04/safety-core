@@ -612,7 +612,10 @@ def build_graph(repo: Repo, stale: Iterable[tuple[str, str]] = ()) -> tuple[dict
                       "is_dir": is_dir, "files": len(members), "sensitive": any(kinds[f] for f in members),
                       "routes": ["route:" + rid for rid in rids],
                       "principles": [pid for pid in d.principles if any(pid in d.routes[r].principles for r in rids)]})
-        edges += [{"kind": "governs", "from": "route:" + rid, "to": "place:" + path} for rid in rids]
+        for rid in rids:
+            hits = [f for f in members if rid in reach.get(f, set())]
+            edges.append({"kind": "governs", "from": "route:" + rid, "to": "place:" + path,
+                          "matches": len(hits), "matched_files": hits})
     unrouted: dict[str, list[str]] = {}
     for f in files:
         if kinds[f] and f not in reach:

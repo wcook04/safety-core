@@ -28,11 +28,13 @@ Read the map from left to right.
 4. **Places.** The directories at depth one and two, plus root files that a route
    matches, listed as a file tree. The count is the files inside each place, so a
    folder and its subfolder can show the same files; do not add rows together.
+   Route details show matched-file counts. A redundant parent link is omitted only
+   when all of its matched files are represented by its children.
 
 ## Tracing one route
 
 The map draws the connections of one route at a time. On opening, it traces a populated
-route, chosen from the ids alone so the same doctrine always opens the same way; add
+route, chosen by principle count, then the fewest representative places, then id, so the same graph always opens the same way; add
 `#route=tests` to the address to choose one. The bar above the map names the traced
 route and how many principles, places and matched files it has.
 
@@ -46,6 +48,13 @@ route and how many principles, places and matched files it has.
 A principle that no route carries has a hollow end and the label "repo-wide". It
 applies through the entry card, and through a repository-wide check where one is
 configured.
+
+## On a phone
+
+Below 600 pixels, a route selector and readable lists replace the small drawing.
+Choose a route to see its full principle titles, configured mechanisms and matched
+places. Tap a principle or place to read its details below. Routes with no matching
+files remain selectable and explain the empty result. Wider screens retain the map.
 
 ## Configured mechanisms
 
@@ -122,6 +131,28 @@ in id order, and each row is sized to its wrapped title. Places are sorted by pa
 Routes are ordered by the rows they join and spread evenly down the principle column,
 so each label has its own space; selection never moves them. When the doctrine changes,
 marks glide to their new rows, new marks fade in and removed ones fade out.
+
+## Review captures
+
+`python3 scripts/build_map_examples.py --out /tmp/safety-map-review` builds standalone
+snapshots from the included demo. The `empty` snapshot adds only a synthetic `unused`
+route with paths `unused/**`; the real demo remains unchanged. Each snapshot has a
+light variant (the viewer’s existing light theme) and a dark variant (its dark media
+rule enabled), so captures do not depend on desktop preferences.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="img/map-empty-20261013-dark.jpg">
+  <img src="img/map-empty-20261013-light.jpg" alt="An empty route showing its two principles and zero matched files" width="1280">
+</picture>
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="img/map-phone-20261013-dark.jpg">
+  <img src="img/map-phone-20261013-light.jpg" alt="The phone route selector with readable principles and matched places, with route details below" width="390">
+</picture>
+
+These additional captures use the same demo source plus the declared empty-route
+fixture. Phone captures use a 390 by 844 viewport; empty-route captures use 1280 by 900.
+Run `node scripts/test_map_model.js` for lossless aggregation and old-snapshot fixtures.
 
 ## For the engine
 

@@ -266,6 +266,18 @@ details.entry pre { font: 11.5px/1.55 var(--mono); white-space: pre-wrap; color:
 .route-block { margin-bottom: 16px; }
 .route-block .rn { font: 12.5px var(--mono); color: var(--ink); }
 .route-block .on { font: 11.5px var(--mono); color: var(--muted); }
+.mobile-route { display: none; }
+@media (max-width: 600px) {
+  .mobile-route { display: block; padding: 16px; border-bottom: 1px solid var(--line); }
+  .mobile-route label { display: block; font-weight: 600; margin-bottom: 8px; }
+  .mobile-route select { width: 100%; min-height: 44px; background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 8px; font: inherit; }
+  .mobile-route h2 { font-size: 18px; margin: 18px 0 8px; }
+  .mobile-route ul { padding: 0; margin: 0; list-style: none; }
+  .mobile-route .row-btn { min-height: 44px; }
+  .mobile-route .row-btn .txt, .mobile-route .mono { overflow-wrap: anywhere; }
+  .mobile-route p { line-height: 1.5; }
+  #map, .tracebar, .tools { display: none; }
+}
 @media (max-width: 860px) {
   body { overflow: auto; display: block; }
   .top { padding: 12px 16px; gap: 10px; }
@@ -321,6 +333,11 @@ details.entry pre { font: 11.5px/1.55 var(--mono); white-space: pre-wrap; color:
       </div>
       <div class="trace" id="trace" aria-live="polite"></div>
     </div>
+    <section class="mobile-route" aria-label="Selected route">
+      <label for="routePick">Trace a route</label>
+      <select id="routePick"></select>
+      <div id="mobileTrace"></div>
+    </section>
     <svg id="map" role="group" aria-label="Safety Core rule view. Use arrow keys to move between marks and Enter to open one. Selecting a route draws its connections."></svg>
     <div class="message" id="message" hidden></div>
   </div>
@@ -456,9 +473,11 @@ details.entry pre { font: 11.5px/1.55 var(--mono); white-space: pre-wrap; color:
 
     const routePr = new Map(routes.map((r) => [r.id, []]));
     const routePl = new Map(routes.map((r) => [r.id, []]));
+    const memberships = new Map();
     const prAx = new Map(principles.map((p) => [p.id, []]));
     let sawApplies = false, sawGoverns = false, sawServes = false;
     for (const e of g.edges || []) {
+      if (e.kind === 'governs' && Array.isArray(e.matched_files)) memberships.set(e.from + '\n' + e.to, new Set(e.matched_files));
       if (e.kind === 'applies' && routePr.has(e.from) && byId.has(e.to)) { sawApplies = true; if (!routePr.get(e.from).includes(e.to)) routePr.get(e.from).push(e.to); }
       if (e.kind === 'governs' && routePl.has(e.from) && byId.has(e.to)) { sawGoverns = true; if (!routePl.get(e.from).includes(e.to)) routePl.get(e.from).push(e.to); }
       if (e.kind === 'serves' && prAx.has(e.from) && byId.has(e.to)) { sawServes = true; if (!prAx.get(e.from).includes(e.to)) prAx.get(e.from).push(e.to); }
@@ -474,6 +493,21 @@ details.entry pre { font: 11.5px/1.55 var(--mono); white-space: pre-wrap; color:
     for (const [r, ps] of routePr) for (const p of ps) prRoutes.get(p) && prRoutes.get(p).push(r);
     const plRoutes = new Map(places.map((p) => [p.id, []]));
     for (const [r, ps] of routePl) for (const p of ps) plRoutes.get(p) && plRoutes.get(p).push(r);
+    for (const [rid, ids] of routePl) {
+      routePl.set(rid, ids.filter((id) => {
+        const p = byId.get(id), hits = memberships.get(rid + '\n' + id);
+        if (!p.is_dir || !hits || !hits.size) return true;
+        const descendants = ids.filter((child) => child !== id &&
+          (byId.get(child).path || '').startsWith((p.path || '') + '/'));
+        const covered = new Set();
+        for (const child of descendants) {
+          const files = memberships.get(rid + '\n' + child);
+          if (!files) return true; // Older graph@1 snapshots retain all links.
+          for (const file of files) covered.add(file);
+        }
+        return covered.size !== hits.size || [...hits].some((file) => !covered.has(file));
+      }));
+    }
     const dead = new Set(routes.filter((r) => r.matches === 0 || routePl.get(r.id).length === 0).map((r) => r.id));
 
     // principles grouped by their first axiom, in axiom order
@@ -507,7 +541,7 @@ details.entry pre { font: 11.5px/1.55 var(--mono); white-space: pre-wrap; color:
 
     return {
       g, byId, axioms, principles: prOrder, routes, places, dirs, roots, groups, routePr, routePl, prAx, prRoutes, plRoutes,
-      dead, pathOf, parentOf, inEntry, global, gaps: g.gaps || [],
+      dead, pathOf, parentOf, inEntry, global, memberships, gaps: g.gaps || [],
       eff: (p) => (STRENGTH[p.effective] != null ? p.effective : 'prose'),
     };
   }
@@ -846,7 +880,7 @@ details.entry pre { font: 11.5px/1.55 var(--mono); white-space: pre-wrap; color:
     } else {
       svg.style.height = '';
       const kw = Math.min(res.scale, cw / L.LW);
-      const k = L.LH * kw <= ch ? kw : Math.max(ch / L.LH, kw * 0.82);
+      const k = Math.min(kw, ch / L.LH);
       S.base = { k: k, x: Math.max(0, (cw - L.LW * k) / 2), y: Math.max(0, (ch - L.LH * k) / 2) };
     }
     applyView();
@@ -937,6 +971,7 @@ details.entry pre { font: 11.5px/1.55 var(--mono); white-space: pre-wrap; color:
   function renderTrace() {
     const M = S.M, box = $('trace');
     if (!M) return;
+    renderMobile();
     const tr = S.showAll ? null : S.trace;
     if (S.showAll) { box.innerHTML = '<span class="lab">All connections</span><span>Every route is drawn. Turn this off to trace one route at a time.</span>'; return; }
     if (!tr) { box.innerHTML = '<span class="lab">No route traced</span><span>Select a route in the middle column to draw its principles and places.</span>'; return; }
@@ -946,6 +981,37 @@ details.entry pre { font: 11.5px/1.55 var(--mono); white-space: pre-wrap; color:
       plural(np, 'principle') + ' · ' + (dead ? '0 matched files' : plural(nl, 'place') + ' · ' + plural(r.matches || 0, 'matched file')) + '</span>' +
       '<button type="button" class="clear" id="traceClear">Clear</button>';
   }
+  function matchedPlaceText(rid, id) {
+    const files = S.M.memberships.get(rid + '\n' + id);
+    return files ? plural(files.size, 'matched file') : plural((S.M.byId.get(id) || {}).files || 0, 'file') + ' inside';
+  }
+  function renderMobile() {
+    const M = S.M, picker = $('routePick'), box = $('mobileTrace');
+    const options = '<option value="">Choose a route</option>' + M.routes.map((r) =>
+      '<option value="' + esc(r.id) + '">' + esc(r.name || r.id) + ' (' + plural(r.matches || 0, 'matched file') + ')</option>').join('');
+    if (picker.innerHTML !== options) picker.innerHTML = options;
+    picker.value = S.trace || '';
+    const r = S.trace && M.byId.get(S.trace);
+    if (!r) { box.innerHTML = '<p>Choose a route to read its principles and matched places.</p>'; return; }
+    const ps = (M.routePr.get(r.id) || []).map((id) => M.byId.get(id)).filter(Boolean);
+    const places = M.routePl.get(r.id) || [];
+    box.innerHTML = '<h2>' + esc(r.name || r.id) + '</h2><p>' + plural(r.matches || 0, 'matched file') +
+      (M.dead.has(r.id) ? '. Nothing in the repository receives this route.' : '') + '</p>' +
+      '<h2>Principles</h2><ul>' + ps.map(principleRow).join('') + '</ul><h2>Matched places</h2>' +
+      (places.length ? '<ul>' + places.map((id) => rowBtn(id, '<span class="mono">' + esc(placeName(id)) + '</span>', matchedPlaceText(r.id, id))).join('') + '</ul>' : '<p>0 matched files. Check this route’s paths against the repository.</p>');
+  }
+  $('routePick').addEventListener('change', (e) => {
+    S.trace = e.target.value || null;
+    S.showAll = false;
+    $('tAll').setAttribute('aria-pressed', 'false');
+    select(S.trace);
+    renderTrace();
+    $('routePick').focus();
+  });
+  $('mobileTrace').addEventListener('click', (e) => {
+    const button = e.target.closest('[data-go]');
+    if (button) { select(button.dataset.go); panel.scrollIntoView({ block: 'start' }); }
+  });
   $('trace').addEventListener('click', (e) => { if (e.target.closest('#traceClear')) { S.trace = null; if (S.selected && S.selected.startsWith('route:')) S.selected = null; renderTrace(); emphasis(); renderPanel(); } });
   $('tAll').addEventListener('click', (e) => {
     S.showAll = !S.showAll;
@@ -1325,8 +1391,8 @@ details.entry pre { font: 11.5px/1.55 var(--mono); white-space: pre-wrap; color:
     if (ps.length) h += '<h3>Principles it carries</h3><ul>' + ps.map(principleRow).join('') + '</ul>' +
       '<p style="font-size:12.5px;color:var(--muted);margin-top:6px">Each principle keeps its own mechanism; the route has no strength of its own.</p>';
     if (r.reminder) h += '<h3>Reminder text</h3><p class="reminder">' + esc(r.reminder) + '</p>';
-    if (pls.length) h += '<h3>Places it matches</h3><ul>' + pls.map((pl) => rowBtn(pl, '<span class="mono">' + esc(placeName(pl)) + '</span>', plural((M.byId.get(pl) || {}).files || 0, 'file') + ' inside')).join('') + '</ul>' +
-      '<p style="font-size:12.5px;color:var(--muted);margin-top:6px">A folder and its subfolder can both appear; the counts are files inside each place, not files this route matched.</p>';
+    if (pls.length) h += '<h3>Places it matches</h3><ul>' + pls.map((pl) => rowBtn(pl, '<span class="mono">' + esc(placeName(pl)) + '</span>', matchedPlaceText(r.id, pl))).join('') + '</ul>' +
+      '<p style="font-size:12.5px;color:var(--muted);margin-top:6px">A parent is omitted only when the matched files are fully represented by its children. Remaining overlapping counts should not be added. Older snapshots show total files inside each place.</p>';
     return h;
   }
   function placeHTML(pl) {

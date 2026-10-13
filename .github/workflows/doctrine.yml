@@ -22,6 +22,8 @@ jobs:
           git config --global user.email "tests@example.invalid"
       - name: Tests
         run: python -m unittest discover -s tests -v
+      - name: Viewer membership and legacy snapshot regression checks
+        run: node scripts/test_map_model.js
       - name: Doctrine check on this repository
         run: python doctrine.py check
       - name: Doctrine check on the example repository

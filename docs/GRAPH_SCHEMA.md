@@ -48,9 +48,14 @@ that a route or a built-in sensitive pattern matches, so the map stays readable 
 |---|---|---|
 | `serves` | principle → axiom | the principle is one way the axiom is kept |
 | `applies` | route → principle | the route delivers this principle |
-| `governs` | route → place | the route's paths match files in this place |
+| `governs` | route → place | the route's paths match files in this place; `matches` counts them and `matched_files` lists their repository-relative paths |
 | `enforced_by` | principle → enforcer | this mechanism enforces the principle |
 | `cites` | axiom or principle → source | the claim rests on this published source |
+
+New graphs include exact membership on every `governs` edge. This is an additive
+`graph@1` field: viewers accept older edges without it and retain their links.
+A viewer may omit a parent link only when the union of its descendant memberships
+equals the parent's membership. Counts alone do not establish that equality.
 
 ## Gaps
 
