@@ -356,7 +356,16 @@ class Wiring(unittest.TestCase):
                                        "edit_ledger", "untrusted_content", "unsupported_claim", "permission_gate", "dirty_tree",
                                        "unlogged_mistake", "entry_card"})
         for check, spec in checks.items():
-            self.assertEqual(set(spec), {"principles", "level", "event"}, check)
+            expected = {"principles", "level", "event"}
+            if check in {"rule_files", "masked_status", "irreversible", "bypass_checks", "secrets", "receipts"}:
+                expected.add("tools")
+                tools = spec["tools"]
+                self.assertIsInstance(tools, list, check)
+                self.assertTrue(tools, check)
+                self.assertEqual(len(tools), len(set(tools)), check)
+                self.assertTrue(set(tools) <= {"Bash", "Edit", "Write", "MultiEdit", "NotebookEdit"}, check)
+                self.assertIn("Bash", tools, check)
+            self.assertEqual(set(spec), expected, check)
             self.assertIn(spec["event"], hooks.WIRING, check)
 
     def test_principles_named_by_checks_exist_in_the_reference_doctrine(self):

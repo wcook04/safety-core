@@ -34,12 +34,14 @@ from pathlib import Path
 # Read by `doctrine check` with ast: keep it a literal. Modes come from `[hooks]` in doctrine.toml.
 CHECKS = {
     "reminders": {"principles": [], "level": "remind", "event": "PreToolUse"},
-    "rule_files": {"principles": ["P15"], "level": "ask", "event": "PreToolUse"},
-    "masked_status": {"principles": ["P5"], "level": "remind", "event": "PreToolUse"},
-    "irreversible": {"principles": ["P2"], "level": "ask", "event": "PreToolUse"},
-    "bypass_checks": {"principles": ["P1"], "level": "ask", "event": "PreToolUse"},
-    "secrets": {"principles": ["P11"], "level": "block", "event": "PreToolUse"},
-    "receipts": {"principles": ["P6"], "level": "remind", "event": "PostToolUse"},
+    "rule_files": {"principles": ["P15"], "level": "ask", "event": "PreToolUse",
+                   "tools": ["Bash", "Edit", "Write", "MultiEdit", "NotebookEdit"]},
+    "masked_status": {"principles": ["P5"], "level": "remind", "event": "PreToolUse", "tools": ["Bash"]},
+    "irreversible": {"principles": ["P2"], "level": "ask", "event": "PreToolUse", "tools": ["Bash"]},
+    "bypass_checks": {"principles": ["P1"], "level": "ask", "event": "PreToolUse", "tools": ["Bash"]},
+    # Blocking applies to the commit scan in Bash; Edit/Write content is capped at ask.
+    "secrets": {"principles": ["P11"], "level": "block", "event": "PreToolUse", "tools": ["Bash"]},
+    "receipts": {"principles": ["P6"], "level": "remind", "event": "PostToolUse", "tools": ["Bash"]},
     "edit_ledger": {"principles": ["P6"], "level": "record", "event": "PostToolUse"},
     "untrusted_content": {"principles": ["P12"], "level": "remind", "event": "PostToolUse"},
     "unsupported_claim": {"principles": ["P6"], "level": "block", "event": "Stop"},
