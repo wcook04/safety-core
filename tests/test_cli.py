@@ -69,6 +69,18 @@ class Errors(RepoTestCase):
         self.assertEqual(code, 2)
         self.assertIn("python3 doctrine.py init", err)
 
+    def test_safety_entry_point_is_copied_and_runs_inside_the_target(self):
+        root = self.make_repo(DEMO_FILES, doctrine_text=None, hooks=None)
+        setup = subprocess.run([sys.executable, str(ROOT / "safety.py"), "init", "--target", str(root)],
+                               cwd=root, capture_output=True, text=True)
+        self.assertEqual(setup.returncode, 0, setup.stderr)
+        self.assertTrue((root / ".doctrine/safety.py").is_file())
+        self.assertIn(".doctrine/safety.py check", setup.stdout)
+        checked = subprocess.run([sys.executable, ".doctrine/safety.py", "check", "--json"],
+                                 cwd=root, capture_output=True, text=True)
+        self.assertEqual(checked.returncode, 0, checked.stderr)
+        self.assertTrue(json.loads(checked.stdout)["ok"])
+
     def test_the_script_runs_as_a_program(self):
         done = subprocess.run([sys.executable, str(ROOT / "doctrine.py"), "--help"], capture_output=True, text=True)
         self.assertEqual(done.returncode, 0)

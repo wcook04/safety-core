@@ -88,7 +88,7 @@ class Init(RepoTestCase):
     def test_the_plugin_wires_the_same_events_as_init(self):
         wiring = doctrine.read_literal(ROOT / "hooks.py", "WIRING") or doctrine.WIRING
         manifest = json.loads((ROOT / ".claude-plugin" / "plugin.json").read_text())
-        self.assertEqual(manifest["name"], "doctrine-map")
+        self.assertEqual(manifest["name"], "safety-core")
         hooks_file = ROOT / "hooks" / "hooks.json"
         if hooks_file.exists():  # Claude Code merges both, so only one may wire the hooks
             self.assertNotIn("hooks", manifest)

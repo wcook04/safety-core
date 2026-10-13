@@ -49,7 +49,7 @@ print(json.dumps(fixture))' "$SESSION" "$REPO" "$event" | python3 "$HOOKS")"
   fi
 }
 
-echo "doctrine-map hooks demo: repository at $REPO"
+echo "Safety Core hooks demo: repository at $REPO"
 
 hook PreToolUse "A place reminder when the agent edits a test file" <<'JSON'
 {"tool_name": "Edit", "tool_input": {"file_path": "tests/test_app.py", "old_string": "True", "new_string": "add(1, 2) == 3"}}

@@ -1,17 +1,16 @@
 {
-  "name": "doctrine-map",
+  "name": "safety-core",
   "version": "0.1.0",
-  "description": "One doctrine for the AI agents in a repository: compiled into AGENTS.md, CLAUDE.md and path rules, checked for what is enforced and what is only words, and drawn as a live map. Hooks deliver place reminders, ask before irreversible commands, block commits with secrets and check final claims.",
+  "description": "Plain rules for AI agents working in your project. Keep people in control, protect secrets, check claims, and inspect which rules reach which files.",
   "author": {
     "name": "Will Cook"
   },
   "license": "MIT",
   "keywords": [
     "agents",
-    "doctrine",
+    "safety",
     "rules",
     "hooks",
-    "AGENTS.md",
-    "coverage"
+    "AGENTS.md"
   ]
 }

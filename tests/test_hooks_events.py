@@ -28,7 +28,7 @@ class Reminders(HookCase):
 
     def test_reminders_are_factual_statements(self):
         text = self.context(self.pre("Read", file_path=str(self.repo / ".env")))
-        self.assertTrue(text.startswith("doctrine-map: doctrine.toml routes `.env`"), text)
+        self.assertTrue(text.startswith("Safety Core: doctrine.toml routes `.env`"), text)
         self.assertNotRegex(text, r"(?i)\b(you must|always|ignore previous|system:)")
 
     def test_read_and_shell_triggers(self):
@@ -334,7 +334,7 @@ class Script(HookCase):
         code, out, err = self.script(None, raw="{not json")
         self.assertEqual((code, out), (0, None))
         self.assertEqual(len(err.strip().splitlines()), 1)
-        self.assertIn("doctrine-map hooks:", err)
+        self.assertIn("Safety Core hooks:", err)
 
     def test_no_doctrine_is_silent(self):
         code, out, err = self.script({"hook_event_name": "Stop", "cwd": str(self.base), "last_assistant_message": "Pushed."})

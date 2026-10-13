@@ -364,7 +364,7 @@ def hooks_wired(settings: dict, event: str | None = None) -> bool:
     if settings.get("disableAllHooks") is True:
         return False
     plugins = settings.get("enabledPlugins")
-    if isinstance(plugins, dict) and any(str(k).startswith("doctrine-map@") and v for k, v in plugins.items()):
+    if isinstance(plugins, dict) and any(str(k).startswith(("safety-core@", "doctrine-map@")) and v for k, v in plugins.items()):
         return True
     events = settings.get("hooks")
     events = events if isinstance(events, dict) else {}
@@ -972,7 +972,7 @@ def cmd_init(args: argparse.Namespace) -> int:
     dest.mkdir(exist_ok=True)
     (dest / "doctrine.toml").write_text(text, encoding="utf-8")
     copied = []
-    for name in ("doctrine.py", "hooks.py", "map.html"):
+    for name in ("safety.py", "doctrine.py", "hooks.py", "map.html"):
         if (HERE / name).exists() and (HERE / name).resolve() != (dest / name).resolve():
             shutil.copyfile(HERE / name, dest / name)
             copied.append(f".doctrine/{name}")
@@ -987,7 +987,8 @@ def cmd_init(args: argparse.Namespace) -> int:
     print(f"  copied: {', '.join(copied) or 'nothing'}; wrote: {', '.join(changed) or 'nothing'}")
     print("  hooks: " + ("wired in .claude/settings.json" if wired else "already wired" if hooks_wired(repo.settings)
                          else "not wired (hooks.py not found)"))
-    print("Next: python3 .doctrine/doctrine.py check, then explain <path> and map --serve")
+    command = "safety.py" if (dest / "safety.py").exists() else "doctrine.py"
+    print(f"Next: python3 .doctrine/{command} check, then explain <path> and map --serve")
     return 0
 
 def find_viewer(root: Path) -> Path | None:
@@ -1149,12 +1150,12 @@ def cmd_log_error(args: argparse.Namespace) -> int:
 
 # =========================================================================== 7. command line
 
-def main(argv: list[str] | None = None) -> int:
+def main(argv: list[str] | None = None, *, prog: str = "doctrine.py") -> int:
     common = argparse.ArgumentParser(add_help=False)
     common.add_argument("--doctrine", help="doctrine file (default: the nearest doctrine.toml or .doctrine/doctrine.toml)")
-    parser = argparse.ArgumentParser(prog="doctrine.py", description=__doc__.split("\n\n")[0])
+    parser = argparse.ArgumentParser(prog=prog, description="Safety Core: set up, tailor and inspect the rules for your project.")
     sub = parser.add_subparsers(dest="command", required=True)
-    p = sub.add_parser("init", parents=[common], help="adopt the reference doctrine in a repository")
+    p = sub.add_parser("init", parents=[common], help="set up the starting rules in your project")
     p.add_argument("--target", default=".", help="repository to set up (default: here)")
     p.add_argument("--from", dest="reference", help="doctrine to adopt (default: doctrine.toml beside this file)")
     p.add_argument("--force", action="store_true", help="replace an existing doctrine")

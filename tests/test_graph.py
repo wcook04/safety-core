@@ -31,6 +31,14 @@ class Graph(RepoTestCase):
         self.assertEqual(nodes["enf:hook:pre_tool#irreversible"]["file"], ".doctrine/hooks.py")
         json.dumps(graph)
 
+    def test_current_and_legacy_plugin_names_keep_hook_coverage(self):
+        for plugin in ("safety-core@local", "doctrine-map@local"):
+            with self.subTest(plugin=plugin):
+                root = self.make_repo(DEMO_FILES)
+                (root / ".claude/settings.json").write_text(json.dumps({"enabledPlugins": {plugin: True}}))
+                _, _, nodes = self.graph(root)
+                self.assertEqual(nodes["P1"]["effective"], "ask")
+
     def test_unwired_hook_source_receives_no_enforcement_credit(self):
         graph, notes, nodes = self.graph(self.make_repo(DEMO_FILES, wired=False))
         self.assertEqual(nodes["P1"]["effective"], "remind")

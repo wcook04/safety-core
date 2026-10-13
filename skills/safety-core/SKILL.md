@@ -1,12 +1,12 @@
 ---
-name: doctrine-map
-description: Give a repository one doctrine for its AI agents and report honestly what holds. Use when someone asks to set up, adopt, audit or explain the rules agents follow in a repository (AGENTS.md, CLAUDE.md, .claude/rules, hooks), to check which rules are enforced and which are only words, to see what an agent receives at a path, or to open the doctrine map. The steps are in program.md; doctrine.py does the work.
+name: safety-core
+description: Set up plain rules for AI agents in a project and report what is checked versus only reminded. Use when someone asks to set up, adopt, audit or explain the rules agents follow in a repository (AGENTS.md, CLAUDE.md, .claude/rules, hooks), to check which rules are enforced and which are only words, to see what an agent receives at a path, or to inspect the visual rule view. The steps are in program.md; safety.py does the work.
 ---
 
-# doctrine-map
+# Safety Core
 
 Read `${CLAUDE_PLUGIN_ROOT}/program.md` and follow it. Outside the plugin, it is
-`program.md` at the root of the doctrine-map repository.
+`program.md` at the root of the Safety Core repository.
 
 In short:
 
@@ -14,10 +14,10 @@ In short:
 2. Set up the repository once:
 
    ```
-   python3 "${CLAUDE_PLUGIN_ROOT}/doctrine.py" init --target .
+   python3 "${CLAUDE_PLUGIN_ROOT}/safety.py" init --target .
    ```
 
-3. Then work with `python3 .doctrine/doctrine.py`:
+3. Then work with `python3 .doctrine/safety.py`:
    - `check`: errors, warnings and the coverage table; it ends with
      "N of M principles enforced beyond words".
    - `build`: rewrites the generated files after you change `.doctrine/doctrine.toml`.

@@ -1,4 +1,4 @@
-# doctrine-map: program
+# Safety Core: agent setup guide
 
 This file tells an AI agent how to give a repository a doctrine and how to report what
 actually holds. Read it top to bottom before you start.
@@ -23,14 +23,14 @@ is low.
 2. In the target repository, run:
 
    ```
-   python3 path/to/doctrine.py init --target .
+   python3 path/to/safety.py init --target .
    ```
 
    This copies `doctrine.toml`, `doctrine.py`, `hooks.py` and `map.html` into `.doctrine/`,
    keeps only the routes that match files here, wires the hooks into
    `.claude/settings.json` without removing anything already there, and builds. From now
-   on the commands are `python3 .doctrine/doctrine.py <command>`.
-3. Run `python3 .doctrine/doctrine.py check` once and keep the output. It is your baseline.
+   on the commands are `python3 .doctrine/safety.py <command>`.
+3. Run `python3 .doctrine/safety.py check` once and keep the output. It is your baseline.
 
 If the repository already has a doctrine, skip `init` and start at the loop.
 
@@ -66,8 +66,8 @@ If the repository already has a doctrine, skip `init` and start at the loop.
    infrastructure, migrations, secrets, release scripts, tests, dependency manifests,
    documentation, and anything specific to this repository. Write each reminder as a fact
    about the place, such as "Files here change database structure".
-4. **Build.** `python3 .doctrine/doctrine.py build`.
-5. **Check.** `python3 .doctrine/doctrine.py check`. Errors fail it: an enforcer that does
+4. **Build.** `python3 .doctrine/safety.py build`.
+5. **Check.** `python3 .doctrine/safety.py check`. Errors fail it: an enforcer that does
    not exist, a generated file that differs from a fresh build, an entry card over its
    budget. Warnings do not: a route that matches nothing, a sensitive place no route
    reaches.
@@ -80,10 +80,10 @@ If the repository already has a doctrine, skip `init` and start at the loop.
      the entry card.
    Then go back to step 4. Stop when `check` passes, or when every remaining error needs
    the person.
-7. **Explain.** Run `python3 .doctrine/doctrine.py explain <path>` for the two or three
+7. **Explain.** Run `python3 .doctrine/safety.py explain <path>` for the two or three
    riskiest paths (a migration, a workflow, an infrastructure file). Read what an agent
    receives there and fix anything surprising.
-8. **Map.** Run `python3 .doctrine/doctrine.py map --serve --open` for a live map, or
+8. **Map.** Run `python3 .doctrine/safety.py map --serve --open` for a live map, or
    `map --out doctrine-map.html` for one file to share. Hide what is only words to see the
    doctrine as the repository enforces it.
 
@@ -116,5 +116,5 @@ enforced unless `check` says so.
 - Hooks are a guardrail for a trusted but fallible agent. They are not a sandbox or a
   security boundary. Say so if the person asks what the hooks protect against.
 - `check` runs in CI. A build that someone forgot to run fails there, which is the point.
-- `python3 .doctrine/doctrine.py log-error "<what happened>" --principle P9 --lesson
+- `python3 .doctrine/safety.py log-error "<what happened>" --principle P9 --lesson
   "<rule learned>"` records a mistake that reached the person or the repository.

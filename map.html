@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light dark">
-<title>Doctrine map</title>
+<title>Safety Core · rules</title>
 <link rel="icon" href="data:,">
 <style>
 :root {
@@ -261,7 +261,7 @@ svg.meter .owed { fill: none; stroke: var(--gap); stroke-dasharray: 2 1.5; }
 <body>
 <header class="top">
   <div class="ident">
-    <h1 id="docName">Doctrine map</h1>
+    <h1 id="docName">Safety Core</h1>
     <span class="ver" id="docVer"></span>
     <span class="repo" id="repoName"></span>
     <span class="status" id="status"><span class="dot"></span><span id="statusText">Loading</span></span>
@@ -275,7 +275,7 @@ svg.meter .owed { fill: none; stroke: var(--gap); stroke-dasharray: 2 1.5; }
 <section class="coverage" id="coverage" aria-label="Coverage"></section>
 <main class="stage">
   <div class="map-wrap" id="mapWrap">
-    <svg id="map" role="group" aria-label="Doctrine map. Use arrow keys to move between marks and Enter to open one."></svg>
+    <svg id="map" role="group" aria-label="Safety Core rule view. Use arrow keys to move between marks and Enter to open one."></svg>
     <div class="zoom">
       <button type="button" id="zOut" aria-label="Zoom out">&minus;</button>
       <button type="button" id="zIn" aria-label="Zoom in">+</button>
@@ -1264,10 +1264,10 @@ svg.meter .owed { fill: none; stroke: var(--gap); stroke-dasharray: 2 1.5; }
 
   function renderHeader() {
     const g = S.graph, d = g.doctrine || {}, r = g.repository || {};
-    $('docName').textContent = d.name || 'Doctrine map';
+    $('docName').textContent = d.name || 'Safety Core';
     $('docVer').textContent = d.version ? 'v' + d.version : '';
     $('repoName').textContent = r.name ? r.name + (r.commit ? ' @ ' + String(r.commit).slice(0, 7) : '') : '';
-    document.title = (d.name ? d.name + ' · ' : '') + 'Doctrine map';
+    document.title = (d.name ? d.name + ' · ' : '') + 'Safety Core rules';
     renderStatus();
   }
   function renderStatus() {
@@ -1333,7 +1333,7 @@ svg.meter .owed { fill: none; stroke: var(--gap); stroke-dasharray: 2 1.5; }
     if (!got) {
       const m = $('message');
       m.hidden = false;
-      m.innerHTML = '<div><p style="color:var(--ink);font-weight:600">No doctrine graph found.</p><p>Run <span class="mono">doctrine.py map --serve</span> for a live map, or <span class="mono">doctrine.py map --out</span> for a single file with the graph inside.</p></div>';
+      m.innerHTML = '<div><p style="color:var(--ink);font-weight:600">No rule view found.</p><p>Run <span class="mono">safety.py map --serve</span> for a live map, or <span class="mono">safety.py map --out</span> for a single file with the graph inside.</p></div>';
       $('statusText').textContent = 'No data';
       return;
     }
