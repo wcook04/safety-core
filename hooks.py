@@ -44,7 +44,8 @@ CHECKS = {
     "receipts": {"principles": ["P6"], "level": "remind", "event": "PostToolUse", "tools": ["Bash"]},
     "edit_ledger": {"principles": ["P6"], "level": "record", "event": "PostToolUse"},
     "untrusted_content": {"principles": ["P12"], "level": "remind", "event": "PostToolUse"},
-    "unsupported_claim": {"principles": ["P6"], "level": "block", "event": "Stop"},
+    "unsupported_claim": {"principles": ["P6"], "level": "block", "event": "Stop",
+                          "receipt_events": ["PostToolUse", "PostToolUseFailure"]},
     "permission_gate": {"principles": ["P3"], "level": "advise", "event": "Stop"},
     "dirty_tree": {"principles": ["P4"], "level": "advise", "event": "Stop"},
     "unlogged_mistake": {"principles": ["P9"], "level": "advise", "event": "Stop"},
@@ -631,6 +632,30 @@ def _danger(target: str, cwd: Path, root: Path | None) -> str:
     return f"{path}, outside the project"
 
 
+def _publish_dry_run(head: str, args: list) -> bool:
+    """Recognise an enabled long dry-run option on publishers that support it.
+
+    -n is not portable: npm uses it for --no-yes and Poetry for --no-interaction.
+    Twine, flit and gem push have no supported dry-run exemption here.
+    """
+    if head not in ("npm", "pnpm", "yarn", "bun", "cargo", "poetry", "uv"):
+        return False
+    enabled = False
+    for i, arg in enumerate(args):
+        if arg == "--":
+            break
+        if arg == "--no-dry-run":
+            enabled = False
+        elif arg.startswith("--no-dry-run="):
+            enabled = arg.partition("=")[2] == "false"
+        elif arg == "--dry-run":
+            value = args[i + 1] if i + 1 < len(args) else ""
+            enabled = value != "false"
+        elif arg.startswith("--dry-run="):
+            enabled = arg.partition("=")[2] == "true"
+    return enabled
+
+
 def irreversible(words: list, cwd: Path, root: Path | None) -> str:
     """What an irreversible or publishing command will do, or ""."""
     w = bare(words)
@@ -663,7 +688,7 @@ def irreversible(words: list, cwd: Path, root: Path | None) -> str:
     publish = (head in ("npm", "pnpm", "yarn", "bun") and "publish" in pos[:2]) or (head == "twine" and pos[:1] == ["upload"])
     publish = publish or (head in ("cargo", "poetry", "uv", "flit") and pos[:1] == ["publish"]) or (head == "gem" and pos[:1] == ["push"])
     publish = publish or (re.fullmatch(r"python[0-9.]*", head) is not None and args[:3] == ["-m", "twine", "upload"])
-    if publish and not flags(args) & {"--dry-run", "-n"}:
+    if publish and not _publish_dry_run(head, args):
         return "publishes a package to a registry, where a release cannot be cleanly withdrawn"
     if head == "gh" and pos[:2] == ["repo", "create"] and "--public" in args:
         return "creates a public repository"
