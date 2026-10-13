@@ -857,12 +857,12 @@ def pre_tool(ctx: Ctx, out: Out) -> None:
         if rel is not None:
             reminders(ctx, out, [(rel, "edit")])
             if is_rule_file(ctx, rel):
-                out.add("rule_files", f"Safety Core asks first: `{rel}` is one of the files that set the rules agents work under, "
+                out.add("rule_files", f"Safety Core: `{rel}` is one of the files that set the rules agents work under, "
                         f"so editing it changes those rules. Generated regions are rebuilt from {ctx.rel(ctx.path)} by `doctrine.py build`.")
         new, old = _new_text(tool, ti)
         found = [label for label in shapes(new) if label not in shapes(old)]
         if found and git(ctx.cwd, "check-ignore", "-q", str(target)) is None:
-            out.add("secrets", f"Safety Core asks first: the new content for `{rel or target}` holds a value shaped like "
+            out.add("secrets", f"Safety Core: the new content for `{rel or target}` holds a value shaped like "
                     f"{' and '.join(found)} (not repeated here). Credentials stay out of code and commits.", cap="ask")
     elif tool == "Read":
         rel = ctx.rel(ti.get("file_path") or "")
@@ -900,12 +900,12 @@ def bash(ctx: Ctx, out: Out, command: str) -> None:
     reminders(ctx, out, [(r, "shell") for r in shell_rels if r not in (None, ".")] + [(r, "edit") for r in write_rels if r not in (None, ".")])
     rule_hits = sorted({r for r in write_rels if r not in (None, ".") and is_rule_file(ctx, r)})
     if rule_hits:
-        out.add("rule_files", f"Safety Core asks first: this command writes {', '.join(f'`{r}`' for r in rule_hits)}, which set the rules "
+        out.add("rule_files", f"Safety Core: this command writes {', '.join(f'`{r}`' for r in rule_hits)}, which set the rules "
                 f"agents work under, so it changes those rules. `doctrine.py build` regenerates them from {ctx.rel(ctx.path)}.")
     if guards:
-        out.add("irreversible", "Safety Core asks first: " + "; ".join(guards) + ".")
+        out.add("irreversible", "Safety Core: " + "; ".join(guards) + ".")
     if skips:
-        out.add("bypass_checks", "Safety Core asks first: " + "; ".join(skips) + ". These hooks are among the checks people "
+        out.add("bypass_checks", "Safety Core: " + "; ".join(skips) + ". These hooks are among the checks people "
                 "rely on to oversee changes; if one is wrong, saying so keeps it visible.")
     for where, worktree, untracked in commit_scans if ctx.mode("secrets") != "off" else ():
         found = staged_secrets(where, worktree, untracked)
