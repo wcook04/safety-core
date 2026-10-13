@@ -60,8 +60,10 @@ class AdoptionDogfood(unittest.TestCase):
         # command must work using only the files in the adopted project.
         dist = self.base / "safety-core"
         dist.mkdir()
-        for name in ("safety.py", "doctrine.py", "hooks.py", "doctrine.toml", "map.html"):
+        for name in ("safety.py", "doctrine.py", "hooks.py", "doctrine.toml"):
             shutil.copyfile(ROOT / name, dist / name)
+        (dist / "viewer").mkdir()
+        shutil.copyfile(ROOT / "viewer/map.html", dist / "viewer/map.html")
         done = self.run_process(sys.executable, str(dist / "safety.py"), "init", "--target", ".")
         self.assert_ok(done)
         shutil.rmtree(dist)
