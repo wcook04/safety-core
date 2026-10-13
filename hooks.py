@@ -838,6 +838,8 @@ def _route_text(ctx: Ctx, route, rel: str) -> str:
     carried = [ctx.doctrine.principles[p] for p in route.principles if p in ctx.doctrine.principles]
     if carried:
         text += "\nPrinciples on this route:\n" + "\n".join(f"- {p.id} {p.name}: {p.one}" for p in carried)
+    for ref in route.skills:
+        text += f"\nWorkflow: {ref.path} — {ref.when}. Read when relevant; this is guidance, not execution."
     return text
 
 

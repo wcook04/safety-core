@@ -172,3 +172,66 @@ external requests. It reads only `doctrine-map/graph@1` (see
 Only `block`, `ask` and `check` count as enforced. Reminders and advice remain visible
 but do not enter that total. Hook credit requires repository event wiring and respects
 mode overrides; it is a configuration report, not proof of execution in an agent host.
+
+## Give folders a purpose and route their workflows
+
+People can add folders for any purpose that suits their project. The map reads
+`docs/repository_layout.json` when present, then
+`docs/maintainers/repository-layout.json`; set `layout_policy` in the doctrine's
+`[doctrine]` table to use another existing policy, such as Plectis's
+`docs/maintainers/repository-layout.json`. A configured policy must exist and be
+valid. Projects without a policy retain their current map. This checkout uses
+`docs/maintainers/repository-layout.json`, with guide links to the maintained
+documentation owners.
+
+For example, create `field-notes/visit-01.md` and add this entry under the existing
+policy's `directories` object:
+
+```json
+"field-notes": {"purpose": "Instrument observations and supporting material"}
+```
+
+The project chooses `undeclared_directories: "warn"` or `"error"`. Warning mode
+allows ordinary additions while showing that their purpose is undeclared; it does
+not disable existing placement checks. Version `repository_layout@2` also accepts
+nested declarations. Ancestor constraints still apply. An optional `guide` names
+an existing owner document. Folder declarations need no new approval ceremony.
+
+The place panel shows the purpose, where it was declared, the guide and applicable
+rule routes. Undeclared and declared-with-no-visible-files states remain distinct.
+Both phone and desktop panels provide this information. The phone’s place selector
+also opens folders with no matching route, including declared-only folders. Explicitly declared deep
+folders appear without expanding every directory in the repository.
+
+To attach an existing workflow, add a reference to a relevant `[[route]]` in
+`doctrine.toml` (or `.doctrine/doctrine.toml` in an adopted project):
+
+```toml
+[[route]]
+id = "field-notes"
+paths = ["field-notes/**"]
+principles = ["P8"]
+reminder = "Keep observations and their evidence together."
+skills = [{ path = "skills/repository-organization/SKILL.md", when = "Adding folders or generalising a local organisation lesson" }]
+```
+
+The path must name a local skill. Use the project's existing rule routes to select
+paths and principles; folder creation does not require inventing a new safety rule.
+Run `python3 doctrine.py build` and `python3 doctrine.py explain field-notes/visit-01.md`
+(use `.doctrine/doctrine.py` in an adopted project). The route's skill appears in
+explain output, generated agent guidance and hook reminders. In the map, select the
+route or a matched place and expand the skill to read it, including offline. These
+are workflow instructions, not enforcement or evidence of execution.
+
+`init` retains only reference-skill associations whose files exist in the adopting
+project. It does not install the author's folder tree or overwrite local skills.
+The live map refreshes when its policy or referenced skills change. Save local
+lessons in the local skill, generalise evidenced reusable rules through its existing
+upstream owner, and rebuild generated views rather than editing them.
+
+The review builder also emits `purposes.html#route=field-notes`, with a custom
+folder, nested purpose, declared-only folder and routed organisation skill. Refresh
+the viewer's fallback sample from that fixture with
+`python3 scripts/build_map_examples.py --out /tmp/safety-map-review --refresh-sample`.
+The fixture is assembled from the demo and the canonical local skill; generated
+sample JSON is never edited by hand.

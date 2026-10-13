@@ -33,3 +33,16 @@ const empty = {nodes: [{id:'route:empty',kind:'route',matches:0,principles:[]}],
 assert.equal(context.model(empty).dead.has('route:empty'), true);
 assert.deepEqual(shown(g), shown(g), 'Repeated builds are deterministic');
 console.log('Map model: 8 membership, legacy and empty-route checks passed');
+
+vm.runInContext(between('  const esc =', '  const clamp =') +
+  between('  function skillsHTML(', '  function placeHTML(') +
+  '\nthis.skillsHTML = skillsHTML; this.purposeHTML = purposeHTML;', context);
+assert.equal(context.skillsHTML(undefined), '');
+assert.match(context.purposeHTML({}), /not supplied/);
+assert.match(context.purposeHTML({policy_source:'docs/layout.json', observation:'declared_only'}), /empty, ignored, or not yet created/);
+assert.match(context.purposeHTML({policy_source:'docs/layout.json'}), /no new approval/);
+const skillMarkup = context.skillsHTML([{path:'skills/notes/SKILL.md',when:'Writing notes',status:'present',text:'<script>bad()</script>'}]);
+assert.match(skillMarkup, /&lt;script&gt;/);
+assert.doesNotMatch(skillMarkup, /<script>/);
+assert.match(skillMarkup, /do not run a workflow/);
+console.log('Map purpose and skill rendering: legacy, discovery and escaping checks passed');

@@ -84,3 +84,21 @@ principle's id; `unrouted_sensitive` carries both the place's node id and its pa
 ```
 
 `enforced_beyond_words` counts only `block`, `ask` and `check`. Reminders and advice are not enforcement. Hook source may be `present` with `level: null` when unwired, off or record-only. Hook levels reflect repository event wiring and mode overrides, not an observed host execution.
+
+## Project purposes and workflow references
+
+These are optional additive `graph@1` fields; older snapshots remain readable.
+Place nodes may carry `purpose`, `purpose_path` (the nearest declared ancestor),
+`policy_source`, `guide` and `observation` (`observed` or `declared_only`). The
+existing project layout policy owns this metadata. Explicit declarations may add
+places deeper than two levels. A declared-only place has no visible files; this
+is not evidence that the filesystem folder is absent. No empty membership creates
+a `governs` edge. An observed place with no declaration has a null purpose.
+
+Route nodes may carry `skills`: a list of `{path, when, status, text}`. The doctrine
+route owns the association; the named local `SKILL.md` owns the workflow. Status is
+`present` or `missing`; text is embedded for offline reading and null when missing.
+Paths are repository-relative and external symlink targets are never read. Skill
+text is rendered as escaped text, never executable markup. Missing skills and
+owner guides are check errors (`missing_skill`, `missing_guide`). Skills do not
+change enforcement levels or establish that a workflow ran.
