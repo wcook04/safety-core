@@ -359,8 +359,8 @@ def hook_commands(settings: dict) -> list[str]:
                     found.append(" ".join(str(x) for x in [hook.get("command", ""), *(hook.get("args") or [])]))
     return found
 
-def hooks_wired(settings: dict, event: str | None = None) -> bool:
-    """True when this repository's Claude Code settings run doctrine-map's hooks."""
+def hooks_wired(settings: dict, event: str | None = None, tools: Iterable[str] = ()) -> bool:
+    """Recognised event wiring, with every required tool covered by its matchers."""
     if settings.get("disableAllHooks") is True:
         return False
     plugins = settings.get("enabledPlugins")
@@ -368,8 +368,27 @@ def hooks_wired(settings: dict, event: str | None = None) -> bool:
         return True
     events = settings.get("hooks")
     events = events if isinstance(events, dict) else {}
-    selected = settings if event is None else {"hooks": {event: events.get(event, [])}}
-    return any("hooks.py" in command and "doctrine" in command for command in hook_commands(selected))
+    selected = events.values() if event is None else [events.get(event, [])]
+    patterns = []
+    for groups in selected:
+        for group in groups if isinstance(groups, list) else ():
+            if not isinstance(group, dict):
+                continue
+            commands = hook_commands({"hooks": {"selected": [group]}})
+            if any("hooks.py" in command and "doctrine" in command for command in commands):
+                patterns.append(group.get("matcher", ""))
+
+    def matches(pattern, tool):
+        if pattern in ("", "*"):
+            return True
+        if not isinstance(pattern, str):
+            return False
+        try:
+            return re.search(pattern, tool) is not None
+        except re.error:
+            return False
+
+    return bool(patterns) and all(any(matches(pattern, tool) for pattern in patterns) for tool in tools)
 
 
 # =========================================================================== 3. enforcers
@@ -449,9 +468,11 @@ def resolve_enforcers(repo: Repo, matched: dict[str, list[str]]):
             mode = modes.get(key)
             mode = mode if mode in ("block", "ask", "remind", "advise", "record", "off") else check.get("level")
             level = mode if mode in LEVELS else None
-            if not event or not hooks_wired(repo.settings, event):
+            required_tools = check.get("tools", ())
+            if not event or not hooks_wired(repo.settings, event, required_tools):
                 level = None
-                notes.append(f"{ref} is not wired for {event or 'a known event'} in repository settings; no hook credit.")
+                scope = f" covering {', '.join(required_tools)}" if required_tools else ""
+                notes.append(f"{ref} is not wired for {event or 'a known event'}{scope} in repository settings; no hook credit.")
             elif mode in ("off", "record"):
                 notes.append(f"{ref} is {mode}; it does not enforce or deliver this rule.")
             elif event == "Stop" and mode != "block":

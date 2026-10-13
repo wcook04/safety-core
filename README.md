@@ -12,7 +12,12 @@ It adapts selected ideas from [Anthropic's Claude Constitution](https://www.anth
 to repository work. You can revise that starting point for your project. It does
 not train a model or implement the complete Constitution.
 
-![Safety Core rule map](docs/img/map-20261013-light.png)
+<a href="docs/MAP.md">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/img/map-20261013-dark.png">
+    <img src="docs/img/map-20261013-light.png" alt="Safety Core maps axioms to principles, rules and repository files, separating configured checks from reminders and written guidance." width="1440">
+  </picture>
+</a>
 
 *The included example, captured 13 October 2026. It has two configuration checks
 and no runtime hooks wired. Reminders and advice are shown separately from enforced
@@ -122,6 +127,28 @@ is covered. Read warnings even when `check` passes.
 Hooks recognize selected patterns, can be bypassed, and fail open on internal
 errors. They do not provide host isolation, access control or complete secret
 detection. See [hook details and limits](docs/HOOKS.md).
+
+## Repository map
+
+| Source | Purpose |
+|---|---|
+| [doctrine.toml](doctrine.toml) | Editable reference rules and their sources. |
+| [safety.py](safety.py), [doctrine.py](doctrine.py) | Setup, generation, checks and the local map server. |
+| [hooks.py](hooks.py), [hooks/](hooks/) | Claude Code event handlers and plugin wiring. |
+| [map.html](map.html) | Self-contained viewer. |
+| [examples/](examples/) | Sample project and synthetic hook demonstration. |
+| [tests/](tests/) | Checks for setup, generation, hooks and reported coverage. |
+| [sources/](sources/), [docs/](docs/) | Attributed excerpts, adoption and design guides. |
+
+## Videos and related projects
+
+**Safety Core walkthrough:** not yet published. The [project films](https://wcook04.github.io/plectis/#videos) show the separate research programme and its working environment.
+
+- [Plectis toolkit](https://github.com/wcook04/plectis): 88 Python components and examples; [explore the component map](https://wcook04.github.io/plectis/docs/system-map.html).
+- [Plectis Erdős](https://github.com/wcook04/plectis-erdos): papers, proofs and open questions; [read the research](https://wcook04.github.io/plectis/maths/).
+- [Plectis Atlas](https://github.com/wcook04/plectis-atlas): an independent [reader for OpenAI's mathematics release](https://wcook04.github.io/plectis-atlas/).
+
+For fixes and rule proposals, see [Contributing](CONTRIBUTING.md). Use the [private reporting route](SECURITY.md) for vulnerabilities.
 
 ## Foundations and reuse
 

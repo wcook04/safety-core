@@ -73,6 +73,39 @@ class Graph(RepoTestCase):
         _, _, nodes = self.graph(root)
         self.assertEqual(nodes["P12"]["effective"], "remind")
 
+    def test_tool_matchers_must_cover_the_advertised_hook_check(self):
+        for matcher, shell_credit, write_credit in (
+            ("Read", False, False), ("Edit|Write", False, False),
+            ("Bash", True, False), ("bash", False, False),
+            ("Bash|Edit|Write|MultiEdit|NotebookEdit", True, True),
+            (".*", True, True), ("*", True, True), ("", True, True),
+            ("[", False, False),
+        ):
+            with self.subTest(matcher=matcher):
+                root = self.make_repo(DEMO_FILES, doctrine_text=REFERENCE.read_text(),
+                                      hooks=(REFERENCE.parent / "hooks.py").read_text())
+                settings = {"hooks": {"PreToolUse": [{"matcher": matcher,
+                            "hooks": [{"type": "command", "command": doctrine.HOOK_COMMAND}]}]}}
+                (root / ".claude/settings.json").write_text(json.dumps(settings))
+                _, _, nodes = self.graph(root)
+                for pid, key, credited in (("P1", "bypass_checks", shell_credit),
+                                          ("P2", "irreversible", shell_credit),
+                                          ("P11", "secrets", shell_credit),
+                                          ("P15", "rule_files", write_credit)):
+                    enforcer = next(e for e in nodes[pid]["enforcers"] if e["ref"].endswith("#" + key))
+                    self.assertEqual(enforcer["level"] in ("ask", "block"), credited)
+
+    def test_only_groups_running_our_hook_contribute_matcher_coverage(self):
+        own = {"type": "command", "command": doctrine.HOOK_COMMAND}
+        settings = {"hooks": {"PreToolUse": [
+            {"matcher": "Bash", "hooks": [own]},
+            {"matcher": "Edit|Write", "hooks": [{"command": "echo unrelated"}]},
+        ]}}
+        self.assertTrue(doctrine.hooks_wired(settings, "PreToolUse", ["Bash"]))
+        self.assertFalse(doctrine.hooks_wired(settings, "PreToolUse", ["Bash", "Edit"]))
+        settings["hooks"]["PreToolUse"][1]["hooks"] = [own]
+        self.assertTrue(doctrine.hooks_wired(settings, "PreToolUse", ["Bash", "Edit", "Write"]))
+
     def test_ids_are_stable_across_rebuilds(self):
         root = self.make_repo(DEMO_FILES, doctrine_text=REFERENCE.read_text(encoding="utf-8"))
         first, _, _ = self.graph(root)

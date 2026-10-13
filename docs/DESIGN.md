@@ -11,7 +11,8 @@ editor rule files. Three things go wrong.
    always-present guidance better than guidance they must think to look up, and
    module-level files beat one large root file.
 2. **Rules are not enforced.** A rules file is context, not configuration. Instructions
-   alone do not reliably stop bad actions; hooks and checks do. In practice nobody can
+   alone do not reliably stop bad actions; hooks and checks can intervene in the
+   specific cases they recognise. Without inspecting the configuration, people cannot
    say which of their rules are enforced and which are only hoped for.
 3. **Rules drift.** Several copies (one per tool, one per directory) fall out of step, and
    an agent can edit the rules it works under.
@@ -85,7 +86,7 @@ managed regions is never changed.
 
 | Reference | Present when | Level |
 |---|---|---|
-| `hook:<event>#<key>`, `stop:<name>#<key>` | `hooks.py` has `<key>` in its literal `CHECKS` dict | the check's `level` |
+| `hook:<event>#<key>`, `stop:<name>#<key>` | `hooks.py` has the check in `CHECKS`, and repository settings wire its event and required tool matchers | its configured mode, limited by the event's capabilities; disabled or uncovered checks receive no credit |
 | `route:<id>` | the route exists and matches at least one file | remind |
 | `check:links`, `check:drift` | always: `doctrine.py check` implements them | check |
 | `cli:log-error` | always | prose: it records a lesson and stops nothing |

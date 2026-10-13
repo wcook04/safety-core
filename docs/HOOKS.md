@@ -56,6 +56,13 @@ check: a principle whose `enforced_by` names it (any reference ending in `#<chec
 `CHECKS` is a literal at the top of `hooks.py`, so `doctrine.py check` reads it without
 running the file.
 
+Checks whose reported level depends on particular tools also declare those tools in
+`CHECKS`. Configuration coverage requires the matching event's Safety Core hook groups
+to cover all of them. For example, a `PreToolUse` hook restricted to `Read` cannot earn
+approval or blocking credit for a Bash command guard. Matching is case-sensitive;
+unrelated hooks do not provide coverage. This verifies recognized configuration, not
+whether the host actually ran a hook or every possible command is detected.
+
 ## Changing a level
 
 Add a `[hooks]` table to the doctrine:
