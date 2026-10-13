@@ -371,6 +371,10 @@ class Wiring(unittest.TestCase):
                 self.assertEqual(len(tools), len(set(tools)), check)
                 self.assertTrue(set(tools) <= {"Bash", "Edit", "Write", "MultiEdit", "NotebookEdit"}, check)
                 self.assertIn("Bash", tools, check)
+            if check == "unsupported_claim":
+                expected.add("receipt_events")
+                self.assertEqual(spec["receipt_events"], ["PostToolUse", "PostToolUseFailure"])
+                self.assertTrue(all(event in hooks.WIRING for event in spec["receipt_events"]))
             self.assertEqual(set(spec), expected, check)
             self.assertIn(spec["event"], hooks.WIRING, check)
 
