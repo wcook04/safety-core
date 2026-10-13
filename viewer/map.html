@@ -1287,7 +1287,7 @@ svg.meter .owed { fill: none; stroke: var(--gap); stroke-dasharray: 2 1.5; }
     if (raw) {
       try { return { graph: JSON.parse(raw), origin: 'inline' }; } catch (err) { /* fall through to fetch */ }
     }
-    for (const [url, origin] of [['./graph.json', 'served'], ['./examples/graph.sample.json', 'sample']]) {
+    for (const [url, origin] of [['./graph.json', 'served'], ['./examples/graph.sample.json', 'sample'], ['../examples/graph.sample.json', 'sample']]) {
       try {
         const res = await fetch(url, { cache: 'no-store' });
         if (res.ok) return { graph: await res.json(), origin: origin };

@@ -155,7 +155,7 @@ class SupportSelfTest(unittest.TestCase):
 
     def test_no_source_file_holds_a_key_shape(self):
         sources = [HOOKS_PY, *sorted((ROOT / "tests").glob("test_hooks_*.py")), ROOT / "examples" / "demo.sh",
-                   ROOT / "docs" / "HOOKS.md"]
+                   ROOT / "docs" / "maintainers" / "hooks.md"]
         for path in sources:
             if path.exists():
                 self.assertEqual(hooks.shapes(path.read_text(encoding="utf-8")), [], path.name)

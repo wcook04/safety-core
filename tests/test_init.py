@@ -49,6 +49,19 @@ class Init(RepoTestCase):
         self.assertEqual(code, 0, out)
         self.assertNotIn("hooks_unwired", out)
 
+    def test_source_viewer_is_installed_at_the_compatible_destination(self):
+        (self.dist / "viewer").mkdir()
+        source = self.dist / "viewer" / "map.html"
+        source.write_text("<html>source viewer</html>")
+        root, _ = self.init(DEMO_FILES)
+        self.assertEqual((root / ".doctrine" / "map.html").read_text(), source.read_text())
+        self.assertFalse((root / ".doctrine" / "viewer").exists())
+        self.assertEqual(doctrine.find_viewer(root), root / ".doctrine" / "map.html")
+        (root / ".doctrine" / "map.html").unlink()
+        self.assertEqual(doctrine.find_viewer(root), source)
+        source.unlink()
+        self.assertEqual(doctrine.find_viewer(root), self.dist / "map.html")
+
     def test_a_principle_whose_only_route_was_dropped_falls_back_to_prose(self):
         files = dict(DEMO_FILES)
         files.pop("tests/orders.test.js")
