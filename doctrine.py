@@ -16,7 +16,7 @@ is linked and enforced or honestly marked as words, and draws the result as a ma
     python3 doctrine.py log-error "WHAT" --principle P9 --lesson "RULE"
 
 Standard library only, Python 3.11 or later. The hooks live in hooks.py and the viewer in
-map.html, both beside this file.
+viewer/map.html in the source checkout (map.html beside this file after adoption).
 """
 
 from __future__ import annotations
@@ -993,10 +993,14 @@ def cmd_init(args: argparse.Namespace) -> int:
     dest.mkdir(exist_ok=True)
     (dest / "doctrine.toml").write_text(text, encoding="utf-8")
     copied = []
-    for name in ("safety.py", "doctrine.py", "hooks.py", "map.html"):
+    for name in ("safety.py", "doctrine.py", "hooks.py"):
         if (HERE / name).exists() and (HERE / name).resolve() != (dest / name).resolve():
             shutil.copyfile(HERE / name, dest / name)
             copied.append(f".doctrine/{name}")
+    viewer = next((p for p in (HERE / "viewer" / "map.html", HERE / "map.html") if p.is_file()), None)
+    if viewer is not None and viewer.resolve() != (dest / "map.html").resolve():
+        shutil.copyfile(viewer, dest / "map.html")
+        copied.append(".doctrine/map.html")
     wired = (dest / "hooks.py").exists() and wire_hooks(target)
     repo = open_repo(dest / "doctrine.toml")
     changed = write_outputs(repo, outputs(repo))
@@ -1013,7 +1017,7 @@ def cmd_init(args: argparse.Namespace) -> int:
     return 0
 
 def find_viewer(root: Path) -> Path | None:
-    return next((p for p in (root / ".doctrine" / "map.html", HERE / "map.html") if p.is_file()), None)
+    return next((p for p in (root / ".doctrine" / "map.html", HERE / "viewer" / "map.html", HERE / "map.html") if p.is_file()), None)
 
 GRAPH_TAG = re.compile(r'(<script\b[^>]*\bid="doctrine-graph"[^>]*>)(.*?)(</script>)', re.S | re.I)
 
@@ -1132,7 +1136,7 @@ def cmd_map(args: argparse.Namespace) -> int:
     repo = open_repo(args.doctrine)
     viewer = find_viewer(repo.root)
     if viewer is None:
-        raise UsageError("map.html was not found beside doctrine.py or in .doctrine/")
+        raise UsageError("map.html was not found in viewer/, beside doctrine.py or in .doctrine/")
     if args.serve:
         server = make_server(repo.doctrine.path, args.port)
         url = f"http://127.0.0.1:{server.server_address[1]}/"

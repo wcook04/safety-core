@@ -20,6 +20,8 @@ jobs:
         run: |
           git config --global user.name "doctrine-map tests"
           git config --global user.email "tests@example.invalid"
+      - name: Repository structure
+        run: python scripts/check_repository_structure.py
       - name: Tests
         run: python -m unittest discover -s tests -v
       - name: Doctrine check on this repository
