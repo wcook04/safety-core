@@ -171,6 +171,7 @@ not currently a Spec Kit extension.
 - [Agent setup guide](program.md)
 - [Design](docs/DESIGN.md), [map guide](docs/MAP.md), [graph format](docs/GRAPH_SCHEMA.md)
 - Tests: `python3 -m unittest discover -s tests`
+- `make check` also runs viewer checks with Node.js and its built-in modules.
 
 Safety Core also supports Claude Code plugin installation with a `safety-core`
 skill. Use either plugin hooks or per-project hooks to avoid duplicate execution.
