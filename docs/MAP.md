@@ -1,10 +1,11 @@
 # Reading the map
 
-The map shows your doctrine and your repository in one picture. You can use it to see
-which rules reach which parts of the code, how strongly each rule holds, and where the
-gaps are.
+The map shows your doctrine and your repository's configuration in one picture: which
+principles a route associates with which parts of the code, what mechanism is configured
+for each principle, and where the configuration differs from what the doctrine declares.
+It shows configuration. It does not show what an agent did.
 
-![The map at 1440 by 900, light theme](img/map-1440x900-light.png)
+![The map tracing the tests route in demo-repo, light theme](img/map-20261013-light.png)
 
 ## Opening it
 
@@ -19,92 +20,108 @@ gaps are.
 
 Read the map from left to right.
 
-1. **Axioms.** These are the root commitments, at most seven. Each one is a heavy bar
-   that spans the principles serving it.
-2. **Principles.** These are the working rules. Under each name, in quieter italics, is
-   its anti-principle, the opposite failure the rule must not slide into.
-3. **Routes.** A route attaches principles to paths. Lines come in from the principles
-   a route carries and go out to the places it matches.
-4. **Places.** These are the directories at depth one and two, plus root files that a
-   route matches. They are listed as a file tree with a file count for each.
+1. **Axioms.** The root commitments, at most seven. Each one is a bar that spans the
+   principles serving it.
+2. **Principles.** The working rules, each with its full title and, beneath it, the
+   configured mechanism and any difference from the declared one.
+3. **Routes.** A route associates principles with paths.
+4. **Places.** The directories at depth one and two, plus root files that a route
+   matches, listed as a file tree. The count is the files inside each place, so a
+   folder and its subfolder can show the same files; do not add rows together.
 
-A line into a place means that an agent working there receives the principle as a
-reminder. A principle that no route carries shows a hollow end and the word
-"everywhere". It reaches agents through the entry card and through hooks that apply
-across the whole repository.
+## Tracing one route
 
-## How strongly a rule holds
+The map draws the connections of one route at a time. On opening, it traces a populated
+route, chosen from the ids alone so the same doctrine always opens the same way; add
+`#route=tests` to the address to choose one. The bar above the map names the traced
+route and how many principles, places and matched files it has.
 
-Five cells beside each principle work as a gauge. The more cells are filled, the
-stronger the mechanism that exists for the rule:
+- **Click a route** to trace it. Lines run in from the principles it carries and out to
+  the places it matches. Hovering over a route previews its connections.
+- **Click a principle or place** to read it. This does not expand the drawing into its
+  other routes; the side panel lists them, and each one can be traced.
+- **Clear** removes the trace. **Show all connections** draws every route at once, for
+  checking the whole topology.
 
-| Cells | Level | Meaning |
-|---|---|---|
-| 5 | block | A hook refuses the action. |
-| 4 | ask | A hook stops and asks a person. |
-| 3 | check | CI or the doctrine check fails. |
-| 2 | remind | A factual reminder reaches the agent where it works. |
-| 1 | advise | A note to the person at the end of a turn. |
-| 0 | prose | Written down only. The gauge is empty and the row says "only words". |
+A principle that no route carries has a hollow end and the label "repo-wide". It
+applies through the entry card, and through a repository-wide check where one is
+configured.
 
-The gauge shows the level that actually exists, not the level the doctrine declares. If
-the doctrine declares more than exists, the missing cells are drawn as dashed outlines
-and the row says, for example, "declared ask". The level reads from the shape and the
-fill alone, so colour is never needed to tell levels apart.
+## Configured mechanisms
 
-## Gaps
+Each principle shows one label for the mechanism the repository configuration provides.
+The labels are categories, not points on a score:
 
-Each gap is marked where it occurs, in one muted warm colour, and listed in the side
-panel:
+| Label | Meaning |
+|---|---|
+| block | A hook refuses the action. |
+| ask | A hook stops and asks a person. |
+| check | CI or the doctrine check fails. |
+| remind | A factual reminder reaches the agent where it works. |
+| advise | A note to the person at the end of a turn. |
+| written | Written down only. |
 
-- **Only words:** an empty gauge on the principle.
-- **Missing enforcer:** "1 enforcer missing" under the principle's level.
-- **Route that matches nothing:** a dashed route, with its patterns listed under
-  "Routes that match nothing" at the foot of the places.
-- **Sensitive place with no route:** a hollow ring and "sensitive, no route" beside the
-  place. CI, infrastructure, migrations, secrets and release paths count as sensitive.
+Block, ask and check are drawn filled, remind and advise outlined, and written dashed.
+When the doctrine declares a different mechanism from the one configured, the row adds
+"declared ask" (for example) in a muted warm colour. The panel then says
+"Configuration differs". Changing a rule's wording does not add a mechanism; a hook or
+check has to be configured for the label to change.
 
-A place with no route but nothing sensitive has a plain hollow mark (entry card only).
+## Configuration notes
+
+The side panel's overview lists three kinds of note, kept apart:
+
+- **Declared and configured differ:** the doctrine names a stronger mechanism than the
+  repository provides.
+- **Wiring:** a named enforcer that is missing, a route that matches no file (shown in
+  place as "0 matched files"), a sensitive place with no route, a stale generated file
+  or an entry card over budget.
+- **Written guidance only:** principles delivered by the entry card alone. That can be
+  the right choice for a judgment call that no hook can check.
 
 ## The strip across the top
 
-The strip reads "N of M principles enforced beyond words", then gives the count at each
-level. Hover over a level to pick out its principles on the map. The figures on the
-right give the files under a route, the live and dead routes, the length of the entry
-card against its budget, and the number of gaps.
+The strip names the snapshot and reads "N of M principles have a block, ask or check
+configured", then gives the count for each mechanism, zeros included. Hover over a
+mechanism to pick out its principles. The line beneath says that execution is not
+assessed, and gives the files under a route, the routes that match files, and the
+length of the entry card against its budget.
 
-## Interacting
+## The side panel
 
-- **Hover** over any mark to trace its links. Everything else dims.
-- **Click** a mark to read it in the side panel:
-  - An axiom shows its plain reading, its clause, what it rejects, the principles
-    serving it, and its sources with quotes and links.
-  - A principle shows its one line, its three-line reading, its anti-principle, the
-    declared and actual levels, each enforcer and whether it exists, where it is
-    delivered, and its sources.
-  - A route shows its reminder, its paths and when it fires.
-  - A place lists what an agent working there receives: the entry card, then each
-    route's reminder and principles, then the principles that apply everywhere.
-- **Only what is enforced** fades every principle that is words, reminders or advice, so
-  you see what actually holds.
-- **Stand here** asks for a place and lets everything not delivered there recede.
-  Principles that reach it only as an entry-card line stay half visible.
-- **Zoom** with the buttons, by pinching on a trackpad, or with ctrl or cmd and the scroll wheel.
-  Drag to pan. "Fit" or the 0 key resets the view.
+- A **route** shows its paths, how many files it matched, when it is delivered, the
+  principles it carries with their own mechanisms, its reminder and the places it
+  matches.
+- A **principle** shows its one-line rule, then the configured and declared
+  mechanisms, where it applies, and that execution is not assessed. Below that come
+  what its mechanism does not establish, the failure it rejects, its sources (cited
+  directly, then those inherited through its axioms) and the mechanisms it names.
+- An **axiom** shows its plain reading, its clause, what it rejects, the principles
+  serving it and its sources.
+- A **place** lists what the configuration associates with it: the entry card, each
+  route's reminder and principles, then the repository-wide principles.
+
+**Only block, ask or check** fades every principle configured as a reminder, advice or
+written guidance. **View from one place** picks a place and fades everything the
+configuration does not associate with it. **Zoom** with the buttons, by pinching on a
+trackpad, or with ctrl or cmd and the scroll wheel; drag to pan; "Fit" or the 0 key
+resets the view.
 
 ## Keyboard
 
 Tab moves into the map. The arrow keys then move within a column (up and down) and
-between columns (left and right). Enter or Space opens the focused mark. Escape returns
-the panel to the overview, and a second press leaves Stand here. The + and - keys zoom.
+between columns (left and right). Enter or Space opens the focused mark, and on a route
+traces it. Escape returns the panel to the overview, and a second press leaves View from
+one place. The + and - keys zoom.
 
 ## Layout
 
 The layout is computed from the ids and the paths alone, with no simulation, so the same
 doctrine always gives the same picture. Principles are grouped under their first axiom
-in id order. Places are sorted by path. Each route sits between the principles and
-places it joins. When the doctrine changes, marks glide to their new rows, new marks
-fade in and removed ones fade out.
+in id order, and each row is sized to its wrapped title. Places are sorted by path.
+Routes are ordered by the rows they join and spread evenly down the principle column,
+so each label has its own space; selection never moves them. When the doctrine changes,
+marks glide to their new rows, new marks fade in and removed ones fade out.
 
 ## For the engine
 

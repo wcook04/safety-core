@@ -15,13 +15,13 @@ not train a model or implement the complete Constitution.
 <a href="docs/MAP.md">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/img/map-20261013-dark.png">
-    <img src="docs/img/map-20261013-light.png" alt="Safety Core maps axioms to principles, rules and repository files, separating configured checks from reminders and written guidance." width="1440">
+    <img src="docs/img/map-20261013-light.png" alt="The Safety Core map tracing the tests route: two principles, each configured as a reminder, are associated with the tests folder, and the side panel lists the route's paths and limits." width="1280">
   </picture>
 </a>
 
-*The included example, captured 13 October 2026. It has two configuration checks
-and no runtime hooks wired. Reminders and advice are shown separately from enforced
-coverage; this is a configuration map, not live agent activity.*
+*The included example, captured 13 October 2026, tracing the `tests` route. Two
+principles have a check configured, none has a block or ask, and no runtime hooks are
+wired. This is a configuration map, not live agent activity.*
 
 ## What happens after cloning?
 
