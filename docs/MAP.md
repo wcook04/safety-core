@@ -85,7 +85,7 @@ card against its budget, and the number of gaps.
   - A route shows its reminder, its paths and when it fires.
   - A place lists what an agent working there receives: the entry card, then each
     route's reminder and principles, then the principles that apply everywhere.
-- **Only what is enforced** fades every principle that is only words or only advice, so
+- **Only what is enforced** fades every principle that is words, reminders or advice, so
   you see what actually holds.
 - **Stand here** asks for a place and lets everything not delivered there recede.
   Principles that reach it only as an entry-card line stay half visible.
@@ -118,3 +118,9 @@ external requests. It reads only `doctrine-map/graph@1` (see
 2. `./graph.json`, fetched from the server. When it loads, the map also listens on
    `./events` for server-sent events and fetches the graph again on each message.
 3. `./examples/graph.sample.json`.
+
+## Coverage boundary
+
+Only `block`, `ask` and `check` count as enforced. Reminders and advice remain visible
+but do not enter that total. Hook credit requires repository event wiring and respects
+mode overrides; it is a configuration report, not proof of execution in an agent host.

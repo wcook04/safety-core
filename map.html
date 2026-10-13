@@ -267,7 +267,7 @@ svg.meter .owed { fill: none; stroke: var(--gap); stroke-dasharray: 2 1.5; }
     <span class="status" id="status"><span class="dot"></span><span id="statusText">Loading</span></span>
   </div>
   <div class="tools" role="toolbar" aria-label="Map views">
-    <button class="toggle" id="tEnforced" type="button" aria-pressed="false" title="Fade principles that are only words or only advice"><span class="box"></span>Only what is enforced</button>
+    <button class="toggle" id="tEnforced" type="button" aria-pressed="false" title="Fade principles that are words, reminders or advice"><span class="box"></span>Only what is enforced</button>
     <button class="toggle" id="tStand" type="button" aria-pressed="false" title="Pick a place and see what an agent receives there"><span class="box"></span>Stand here</button>
     <select class="stand-pick" id="standPick" aria-label="Place to stand in" hidden></select>
   </div>
@@ -836,7 +836,7 @@ svg.meter .owed { fill: none; stroke: var(--gap); stroke-dasharray: 2 1.5; }
   function faded(id) {
     const M = S.M, n = M.byId.get(id);
     if (!n) return id.startsWith('ghost:');
-    if (n.kind === 'principle') return STRENGTH[M.eff(n)] <= 1;
+    if (n.kind === 'principle') return STRENGTH[M.eff(n)] < 3;
     if (n.kind === 'route') return M.dead.has(id) || M.routePr.get(id).every((p) => faded(p));
     if (n.kind === 'axiom') return M.principles.filter((p) => M.prAx.get(p.id)[0] === id).every((p) => faded(p.id));
     return false;
@@ -1063,7 +1063,7 @@ svg.meter .owed { fill: none; stroke: var(--gap); stroke-dasharray: 2 1.5; }
     const total = cov.principles != null ? cov.principles : M.principles.length;
     const by = Object.assign({}, cov.by_level || {});
     if (!cov.by_level) for (const p of M.principles) by[M.eff(p)] = (by[M.eff(p)] || 0) + 1;
-    const beyond = cov.enforced_beyond_words != null ? cov.enforced_beyond_words : total - (by.prose || 0);
+    const beyond = (by.block || 0) + (by.ask || 0) + (by.check || 0);
     let bar = '';
     for (const lv of LEVELS) {
       const n = by[lv] || 0;
@@ -1191,7 +1191,7 @@ svg.meter .owed { fill: none; stroke: var(--gap); stroke-dasharray: 2 1.5; }
     } else h += '<p style="margin-top:8px">No enforcer is named. This principle is written down only.</p>';
     const routes = M.prRoutes.get(p.id) || [];
     h += '<h3>Where it is delivered</h3>';
-    if (M.global.has(p.id)) h += '<p>No route carries it to a particular place, so it applies everywhere through the entry card' + (STRENGTH[eff] > 1 ? ' and the hooks that enforce it' : '') + '.</p>';
+    if (M.global.has(p.id)) h += '<p>No route carries it to a particular place, so it applies everywhere through the entry card' + (STRENGTH[eff] >= 3 ? ' and the configured hooks or checks' : '') + '.</p>';
     for (const r of routes) {
       const rn = M.byId.get(r);
       const pls = M.routePl.get(r) || [];

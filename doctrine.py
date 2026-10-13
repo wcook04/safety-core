@@ -359,12 +359,17 @@ def hook_commands(settings: dict) -> list[str]:
                     found.append(" ".join(str(x) for x in [hook.get("command", ""), *(hook.get("args") or [])]))
     return found
 
-def hooks_wired(settings: dict) -> bool:
+def hooks_wired(settings: dict, event: str | None = None) -> bool:
     """True when this repository's Claude Code settings run doctrine-map's hooks."""
+    if settings.get("disableAllHooks") is True:
+        return False
     plugins = settings.get("enabledPlugins")
     if isinstance(plugins, dict) and any(str(k).startswith("doctrine-map@") and v for k, v in plugins.items()):
         return True
-    return any("hooks.py" in command and "doctrine" in command for command in hook_commands(settings))
+    events = settings.get("hooks")
+    events = events if isinstance(events, dict) else {}
+    selected = settings if event is None else {"hooks": {event: events.get(event, [])}}
+    return any("hooks.py" in command and "doctrine" in command for command in hook_commands(selected))
 
 
 # =========================================================================== 3. enforcers
@@ -422,7 +427,10 @@ def resolve_enforcers(repo: Repo, matched: dict[str, list[str]]):
     hooks_name = relative_to_root(hooks_file, repo.root) or "hooks.py"
     checks = read_literal(hooks_file, "CHECKS")
     checks = {str(k): v for k, v in checks.items() if isinstance(v, dict)} if isinstance(checks, dict) else {}
-    guards = wired_guards(repo.settings)
+    guards = set() if repo.settings.get("disableAllHooks") is True else wired_guards(repo.settings)
+    raw = tomllib.loads(Path(repo.doctrine.path).read_text(encoding="utf-8"))
+    modes = raw.get("hooks", {})
+    modes = modes if isinstance(modes, dict) else {}
     nodes: dict[str, Enforcer] = {}
     notes: list[str] = []
 
@@ -435,7 +443,22 @@ def resolve_enforcers(repo: Repo, matched: dict[str, list[str]]):
                 return Enforcer(ref, kind, None, "missing", hooks_name, why)
             if check.get("level") not in LEVELS:
                 notes.append(f"{ref} has level {check.get('level')!r}, not one of {', '.join(LEVELS)}")
-            return Enforcer(ref, kind, check.get("level") if check.get("level") in LEVELS else None, "present", hooks_name)
+            key = rest.partition("#")[2]
+            event = check.get("event") or {"pre_tool": "PreToolUse", "post_tool": "PostToolUse"}.get(
+                rest.partition("#")[0], "Stop" if kind == "stop" else "")
+            mode = modes.get(key)
+            mode = mode if mode in ("block", "ask", "remind", "advise", "record", "off") else check.get("level")
+            level = mode if mode in LEVELS else None
+            if not event or not hooks_wired(repo.settings, event):
+                level = None
+                notes.append(f"{ref} is not wired for {event or 'a known event'} in repository settings; no hook credit.")
+            elif mode in ("off", "record"):
+                notes.append(f"{ref} is {mode}; it does not enforce or deliver this rule.")
+            elif event == "Stop" and mode != "block":
+                level = "advise"
+            elif event in ("PostToolUse", "PostToolUseFailure", "SessionStart") and mode in ("block", "ask"):
+                level = "remind"
+            return Enforcer(ref, kind, level, "present", hooks_name)
         if ref in BUILT_IN:
             return Enforcer(ref, kind, BUILT_IN[ref], "present", "doctrine.py")
         if kind == "route":
@@ -603,7 +626,7 @@ def build_graph(repo: Repo, stale: Iterable[tuple[str, str]] = ()) -> tuple[dict
         "entry": {"lines": entry, "budget": d.entry_budget_lines, "used": len(entry)},
         "nodes": nodes, "edges": edges, "gaps": gaps,
         "coverage": {"axioms": len(d.axioms), "principles": len(d.principles), "by_level": by_level,
-                     "enforced_beyond_words": len(d.principles) - by_level["prose"], "files_total": len(files),
+                     "enforced_beyond_words": sum(by_level[level] for level in ("block", "ask", "check")), "files_total": len(files),
                      "files_governed": len(reach), "routes_live": len(live), "routes_dead": len(d.routes) - len(live)},
     }, notes
 
@@ -815,7 +838,7 @@ def cmd_check(args: argparse.Namespace) -> int:
     if not hooks_wired(repo.settings) and any(types.get(e["ref"]) in ("hook", "stop") and e["status"] == "present"
                                               for p in principles for e in p["enforcers"]):
         warnings.append({"kind": "hooks_unwired", "detail": "hooks.py is not run by .claude/settings.json, so its "
-                         "checks hold only where the doctrine-map plugin is installed; init wires it."})
+                         "checks receive no enforcement credit; init wires it. Global plugin settings are not inspected."})
     table = {pl["path"]: {p["id"]: tier(p, types, p["id"] in pl["principles"] or any(
         e["ref"] in pl["routes"] and e["status"] == "present" for e in p["enforcers"])) for p in principles}
         for pl in places}

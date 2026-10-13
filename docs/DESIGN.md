@@ -163,3 +163,9 @@ Not a sandbox, not a policy engine for production systems and not a replacement 
 review. It makes a repository's rules for agents explicit, delivered, checked and
 visible, so the gap between the rules you wrote and the rules that hold is something you
 can see and close.
+
+## Coverage boundary
+
+Only `block`, `ask` and `check` count as enforced. Reminders and advice remain visible
+but do not enter that total. Hook credit requires repository event wiring and respects
+mode overrides; it is a configuration report, not proof of execution in an agent host.

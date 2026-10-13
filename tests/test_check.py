@@ -14,7 +14,7 @@ class Check(RepoTestCase):
         self.build(root)
         code, out, _ = self.run_cli(root, "check")
         self.assertEqual(code, 0, out)
-        self.assertIn("2 of 3 principles enforced beyond words", out)
+        self.assertIn("1 of 3 principles enforced beyond words", out)
         self.assertIn("Coverage by place", out)
         self.assertIn("check passed", out)
 
@@ -76,7 +76,7 @@ class Check(RepoTestCase):
         self.assertIn("check passed, ", out)
 
     def test_unwired_hooks_are_reported(self):
-        root = self.make_repo(DEMO_FILES)
+        root = self.make_repo(DEMO_FILES, wired=False)
         self.build(root)
         _, out, _ = self.run_cli(root, "check")
         self.assertIn("hooks_unwired", out)

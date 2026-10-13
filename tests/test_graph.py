@@ -31,6 +31,40 @@ class Graph(RepoTestCase):
         self.assertEqual(nodes["enf:hook:pre_tool#irreversible"]["file"], ".doctrine/hooks.py")
         json.dumps(graph)
 
+    def test_unwired_hook_source_receives_no_enforcement_credit(self):
+        graph, notes, nodes = self.graph(self.make_repo(DEMO_FILES, wired=False))
+        self.assertEqual(nodes["P1"]["effective"], "remind")
+        self.assertIsNone(nodes["P1"]["enforcers"][0]["level"])
+        self.assertEqual(graph["coverage"]["enforced_beyond_words"], 0)
+        self.assertTrue(any("not wired" in note for note in notes))
+
+    def test_mode_override_changes_coverage_without_changing_the_declared_rule(self):
+        for mode, expected in (("off", "remind"), ("record", "remind"), ("advise", "remind"), ("block", "block")):
+            with self.subTest(mode=mode):
+                root = self.make_repo(DEMO_FILES, doctrine_text=MINI + f'\n[hooks]\nirreversible = "{mode}"\n')
+                graph, _, nodes = self.graph(root)
+                self.assertEqual(nodes["P1"]["declared"], "ask")
+                self.assertEqual(nodes["P1"]["effective"], expected)
+                self.assertEqual(graph["coverage"]["enforced_beyond_words"], int(mode == "block"))
+
+    def test_wrong_event_and_disable_all_hooks_do_not_earn_credit(self):
+        for settings in (
+            {"hooks": {"Stop": [{"hooks": [{"command": doctrine.HOOK_COMMAND}]}]}},
+            {"enabledPlugins": {"doctrine-map@local": True}, "disableAllHooks": True},
+        ):
+            with self.subTest(settings=settings):
+                root = self.make_repo(DEMO_FILES)
+                (root / ".claude/settings.json").write_text(json.dumps(settings))
+                graph, _, nodes = self.graph(root)
+                self.assertEqual(nodes["P1"]["effective"], "remind")
+                self.assertEqual(graph["coverage"]["enforced_beyond_words"], 0)
+
+    def test_post_tool_modes_cannot_block_a_completed_call(self):
+        root = self.make_repo(DEMO_FILES, doctrine_text=REFERENCE.read_text() + '\n[hooks]\nuntrusted_content = "block"\n',
+                              hooks=(REFERENCE.parent / "hooks.py").read_text())
+        _, _, nodes = self.graph(root)
+        self.assertEqual(nodes["P12"]["effective"], "remind")
+
     def test_ids_are_stable_across_rebuilds(self):
         root = self.make_repo(DEMO_FILES, doctrine_text=REFERENCE.read_text(encoding="utf-8"))
         first, _, _ = self.graph(root)
@@ -84,9 +118,9 @@ class Graph(RepoTestCase):
         graph, _, _ = self.graph(self.make_repo(DEMO_FILES))
         cov = graph["coverage"]
         self.assertEqual(cov["by_level"], {"block": 0, "ask": 1, "check": 0, "remind": 1, "advise": 0, "prose": 1})
-        self.assertEqual((cov["principles"], cov["enforced_beyond_words"]), (3, 2))
+        self.assertEqual((cov["principles"], cov["enforced_beyond_words"]), (3, 1))
         self.assertEqual(cov["files_governed"], 2)
-        self.assertEqual(cov["files_total"], len(DEMO_FILES) + 2)  # plus .doctrine/doctrine.toml and hooks.py
+        self.assertEqual(cov["files_total"], len(DEMO_FILES) + 3)  # plus doctrine, hooks and event wiring
 
 
 class Guards(RepoTestCase):

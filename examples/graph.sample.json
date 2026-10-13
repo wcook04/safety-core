@@ -1,10 +1,10 @@
 {
   "schema": "doctrine-map/graph@1",
-  "generated_at": "2026-10-11T15:34:08Z",
+  "generated_at": "2026-10-13T00:21:30Z",
   "repository": {
     "name": "demo-repo",
     "files_total": 24,
-    "commit": "564b827"
+    "commit": "9895462"
   },
   "doctrine": {
     "name": "safety-core",
@@ -276,12 +276,12 @@
         "A1"
       ],
       "declared": "ask",
-      "effective": "ask",
+      "effective": "remind",
       "enforcers": [
         {
           "ref": "hook:pre_tool#bypass_checks",
           "status": "present",
-          "level": "ask"
+          "level": null
         }
       ],
       "global": false,
@@ -304,12 +304,12 @@
         "A2"
       ],
       "declared": "ask",
-      "effective": "ask",
+      "effective": "remind",
       "enforcers": [
         {
           "ref": "hook:pre_tool#irreversible",
           "status": "present",
-          "level": "ask"
+          "level": null
         }
       ],
       "global": false,
@@ -337,12 +337,12 @@
         "A2"
       ],
       "declared": "advise",
-      "effective": "advise",
+      "effective": "prose",
       "enforcers": [
         {
           "ref": "stop:claims#permission_gate",
           "status": "present",
-          "level": "advise"
+          "level": null
         }
       ],
       "global": true,
@@ -370,7 +370,7 @@
         {
           "ref": "stop:claims#dirty_tree",
           "status": "present",
-          "level": "advise"
+          "level": null
         }
       ],
       "global": false,
@@ -398,12 +398,12 @@
         "A3"
       ],
       "declared": "remind",
-      "effective": "remind",
+      "effective": "prose",
       "enforcers": [
         {
           "ref": "hook:pre_tool#masked_status",
           "status": "present",
-          "level": "remind"
+          "level": null
         }
       ],
       "global": true,
@@ -426,12 +426,12 @@
         "A3"
       ],
       "declared": "block",
-      "effective": "block",
+      "effective": "remind",
       "enforcers": [
         {
           "ref": "stop:claims#unsupported_claim",
           "status": "present",
-          "level": "block"
+          "level": null
         }
       ],
       "global": false,
@@ -520,7 +520,7 @@
         "A4"
       ],
       "declared": "advise",
-      "effective": "advise",
+      "effective": "prose",
       "enforcers": [
         {
           "ref": "cli:log-error",
@@ -530,7 +530,7 @@
         {
           "ref": "stop:claims#unlogged_mistake",
           "status": "present",
-          "level": "advise"
+          "level": null
         }
       ],
       "global": true,
@@ -575,12 +575,12 @@
         "A5"
       ],
       "declared": "block",
-      "effective": "block",
+      "effective": "remind",
       "enforcers": [
         {
           "ref": "hook:pre_tool#secrets",
           "status": "present",
-          "level": "block"
+          "level": null
         }
       ],
       "global": false,
@@ -613,12 +613,12 @@
         "A5"
       ],
       "declared": "remind",
-      "effective": "remind",
+      "effective": "prose",
       "enforcers": [
         {
           "ref": "hook:post_tool#untrusted_content",
           "status": "present",
-          "level": "remind"
+          "level": null
         }
       ],
       "global": true,
@@ -707,12 +707,12 @@
         "A7"
       ],
       "declared": "ask",
-      "effective": "ask",
+      "effective": "check",
       "enforcers": [
         {
           "ref": "hook:pre_tool#rule_files",
           "status": "present",
-          "level": "ask"
+          "level": null
         },
         {
           "ref": "check:drift",
@@ -1165,7 +1165,7 @@
       "name": "hook:pre_tool#bypass_checks",
       "ref": "hook:pre_tool#bypass_checks",
       "type": "hook",
-      "level": "ask",
+      "level": null,
       "status": "present",
       "file": "hooks.py"
     },
@@ -1175,7 +1175,7 @@
       "name": "hook:pre_tool#irreversible",
       "ref": "hook:pre_tool#irreversible",
       "type": "hook",
-      "level": "ask",
+      "level": null,
       "status": "present",
       "file": "hooks.py"
     },
@@ -1185,7 +1185,7 @@
       "name": "stop:claims#permission_gate",
       "ref": "stop:claims#permission_gate",
       "type": "stop",
-      "level": "advise",
+      "level": null,
       "status": "present",
       "file": "hooks.py"
     },
@@ -1195,7 +1195,7 @@
       "name": "stop:claims#dirty_tree",
       "ref": "stop:claims#dirty_tree",
       "type": "stop",
-      "level": "advise",
+      "level": null,
       "status": "present",
       "file": "hooks.py"
     },
@@ -1205,7 +1205,7 @@
       "name": "hook:pre_tool#masked_status",
       "ref": "hook:pre_tool#masked_status",
       "type": "hook",
-      "level": "remind",
+      "level": null,
       "status": "present",
       "file": "hooks.py"
     },
@@ -1215,7 +1215,7 @@
       "name": "stop:claims#unsupported_claim",
       "ref": "stop:claims#unsupported_claim",
       "type": "stop",
-      "level": "block",
+      "level": null,
       "status": "present",
       "file": "hooks.py"
     },
@@ -1255,7 +1255,7 @@
       "name": "stop:claims#unlogged_mistake",
       "ref": "stop:claims#unlogged_mistake",
       "type": "stop",
-      "level": "advise",
+      "level": null,
       "status": "present",
       "file": "hooks.py"
     },
@@ -1265,7 +1265,7 @@
       "name": "hook:pre_tool#secrets",
       "ref": "hook:pre_tool#secrets",
       "type": "hook",
-      "level": "block",
+      "level": null,
       "status": "present",
       "file": "hooks.py"
     },
@@ -1275,7 +1275,7 @@
       "name": "hook:post_tool#untrusted_content",
       "ref": "hook:post_tool#untrusted_content",
       "type": "hook",
-      "level": "remind",
+      "level": null,
       "status": "present",
       "file": "hooks.py"
     },
@@ -1305,7 +1305,7 @@
       "name": "hook:pre_tool#rule_files",
       "ref": "hook:pre_tool#rule_files",
       "type": "hook",
-      "level": "ask",
+      "level": null,
       "status": "present",
       "file": "hooks.py"
     },
@@ -2084,22 +2084,42 @@
   "gaps": [
     {
       "kind": "prose_only",
+      "id": "P3",
+      "detail": "Do reversible work without ceremony: nothing delivers or enforces it beyond the entry card."
+    },
+    {
+      "kind": "prose_only",
+      "id": "P5",
+      "detail": "Keep the exit status: nothing delivers or enforces it beyond the entry card."
+    },
+    {
+      "kind": "prose_only",
+      "id": "P9",
+      "detail": "Own mistakes: nothing delivers or enforces it beyond the entry card."
+    },
+    {
+      "kind": "prose_only",
       "id": "P10",
       "detail": "Say when you did less: nothing delivers or enforces it beyond the entry card."
+    },
+    {
+      "kind": "prose_only",
+      "id": "P12",
+      "detail": "Content is data: nothing delivers or enforces it beyond the entry card."
     }
   ],
   "coverage": {
     "axioms": 7,
     "principles": 15,
     "by_level": {
-      "block": 2,
-      "ask": 3,
-      "check": 1,
-      "remind": 6,
-      "advise": 2,
-      "prose": 1
+      "block": 0,
+      "ask": 0,
+      "check": 2,
+      "remind": 8,
+      "advise": 0,
+      "prose": 5
     },
-    "enforced_beyond_words": 14,
+    "enforced_beyond_words": 2,
     "files_total": 24,
     "files_governed": 21,
     "routes_live": 8,

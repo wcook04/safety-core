@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import contextlib
 import io
+import json
 import os
 import shutil
 import subprocess
@@ -116,7 +117,7 @@ class RepoTestCase(unittest.TestCase):
     """A test case that makes throwaway repositories and runs doctrine.py inside them."""
 
     def make_repo(self, files: dict[str, str] | None = None, doctrine_text: str = MINI,
-                  layout: str = "dotdir", hooks: str | None = FAKE_HOOKS, git: bool = False) -> Path:
+                  layout: str = "dotdir", hooks: str | None = FAKE_HOOKS, git: bool = False, wired: bool = True) -> Path:
         root = Path(tempfile.mkdtemp(prefix="doctrine-test-")).resolve()
         self.addCleanup(shutil.rmtree, root, ignore_errors=True)
         for rel, text in (files or {}).items():
@@ -130,6 +131,11 @@ class RepoTestCase(unittest.TestCase):
         if hooks is not None:
             (root / ".doctrine").mkdir(exist_ok=True)
             (root / ".doctrine" / "hooks.py").write_text(hooks, encoding="utf-8")
+        if hooks is not None and wired and not (root / ".claude/settings.json").exists():
+            (root / ".claude").mkdir(exist_ok=True)
+            (root / ".claude/settings.json").write_text(json.dumps({"hooks": {
+                event: [{"hooks": [{"type": "command", "command": doctrine.HOOK_COMMAND}]}]
+                for event in doctrine.WIRING}}))
         if git:
             subprocess.run(["git", "init", "-q"], cwd=root, check=True)
         return root

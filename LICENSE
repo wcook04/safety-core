@@ -20,5 +20,5 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-The files under constitution/ quote Claude's constitution by Anthropic, which
+The files under sources/anthropic-constitution/ quote Claude's constitution by Anthropic, which
 is released under CC0 1.0 Universal. They are not covered by this licence.

@@ -1,6 +1,6 @@
-# Design notes (not implemented)
+# Historical design notes
 
-None of the code described here exists yet. These notes record the design reached before work stopped on 11 October 2026, and the Claude Code facts it depends on.
+These notes record an early design from 11 October 2026. Implementation subsequently landed; some names and open questions below are historical. For current behavior, read [HOOKS.md](HOOKS.md), [DESIGN.md](DESIGN.md), and the source. The external documentation observations below are dated, not a fresh compatibility verification.
 
 ## Claude Code facts the design rests on
 

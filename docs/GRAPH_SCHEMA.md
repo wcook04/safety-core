@@ -72,10 +72,10 @@ principle's id; `unrouted_sensitive` carries both the place's node id and its pa
 {
   "axioms": 7, "principles": 15,
   "by_level": {"block": 2, "ask": 3, "check": 1, "remind": 5, "advise": 3, "prose": 1},
-  "enforced_beyond_words": 14,
+  "enforced_beyond_words": 6,
   "files_total": 412, "files_governed": 96,
   "routes_live": 7, "routes_dead": 2
 }
 ```
 
-`enforced_beyond_words` counts principles whose effective level is anything but `prose`.
+`enforced_beyond_words` counts only `block`, `ask` and `check`. Reminders and advice are not enforcement. Hook source may be `present` with `level: null` when unwired, off or record-only. Hook levels reflect repository event wiring and mode overrides, not an observed host execution.
