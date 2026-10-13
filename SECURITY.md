@@ -11,7 +11,7 @@ handled by a solo maintainer on a best-effort basis.
 Safety Core's hooks recognise selected command, secret and claim patterns.
 They are guardrails, not a sandbox: hooks can be bypassed or fail open, and their
 operation depends on the agent host and project configuration. A rule appearing
-on the map does not establish that a host executed it. See [hook details](docs/HOOKS.md)
+on the map does not establish that a host executed it. See [hook details](docs/maintainers/hooks.md)
 for the implemented checks and limits.
 
 Ordinary bugs and improvements belong in

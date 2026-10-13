@@ -4,7 +4,7 @@ The map shows your doctrine and your repository in one picture. You can use it t
 which rules reach which parts of the code, how strongly each rule holds, and where the
 gaps are.
 
-![The map at 1440 by 900, light theme](img/map-1440x900-light.png)
+![The map at 1440 by 900, light theme](../img/map-1440x900-light.png)
 
 ## Opening it
 
@@ -12,7 +12,7 @@ gaps are.
   save doctrine.toml or move files, and keeps your selection, zoom and position.
 - `doctrine.py map --out doctrine-map.html` writes a single file with the graph inside.
   It opens from disk with no network access.
-- If you open `map.html` with no graph, it shows the sample in
+- If you serve the checkout and open `viewer/map.html` with no graph, it shows the sample in
   `examples/graph.sample.json`. The header then says "Sample data".
 
 ## The four columns
@@ -108,16 +108,16 @@ fade in and removed ones fade out.
 
 ## For the engine
 
-`map.html` is one self-contained file: the CSS and JavaScript are inline and it makes no
+`viewer/map.html` is one self-contained file: the CSS and JavaScript are inline and it makes no
 external requests. It reads only `doctrine-map/graph@1` (see
-[GRAPH_SCHEMA.md](GRAPH_SCHEMA.md)) and loads it in this order:
+[GRAPH_SCHEMA.md](../reference/graph-schema.md)) and loads it in this order:
 
 1. JSON inside `<script id="doctrine-graph" type="application/json"></script>`. To
    build a static map, replace that empty element with one holding the graph. Escape
    `</` as `<\/` inside the JSON.
 2. `./graph.json`, fetched from the server. When it loads, the map also listens on
    `./events` for server-sent events and fetches the graph again on each message.
-3. `./examples/graph.sample.json`.
+3. `./examples/graph.sample.json` or `../examples/graph.sample.json` in a source checkout.
 
 ## Coverage boundary
 

@@ -51,7 +51,7 @@ class MapOut(RepoTestCase):
         self.assertIn("/* viewer */", html)
 
     def test_the_real_viewer_takes_the_graph(self):
-        if not (ROOT / "map.html").is_file():
+        if not (ROOT / "viewer" / "map.html").is_file():
             self.skipTest("map.html is not in this checkout")
         root = self.make_repo(DEMO_FILES)
         out_file = root / "doctrine-map.html"

@@ -12,7 +12,7 @@ It adapts selected ideas from [Anthropic's Claude Constitution](https://www.anth
 to repository work. You can revise that starting point for your project. It does
 not train a model or implement the complete Constitution.
 
-<a href="docs/MAP.md">
+<a href="docs/guides/map.md">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/img/map-20261013-dark.png">
     <img src="docs/img/map-20261013-light.png" alt="Safety Core maps axioms to principles, rules and repository files, separating configured checks from reminders and written guidance." width="1440">
@@ -79,7 +79,7 @@ generated instruction regions or `.claude/rules/doctrine-*.md`.
 
 You can change existing hook modes, such as asking versus blocking. A new sentence
 does not create a new blocker: a new hard rule needs an executable mechanism and
-tests. The [adoption walkthrough](docs/ADOPTION.md) demonstrates a mode change and
+tests. The [adoption walkthrough](docs/guides/adoption.md) demonstrates a mode change and
 its observable effect without performing a real publication.
 
 ## A normal task and a consequential action
@@ -126,7 +126,7 @@ is covered. Read warnings even when `check` passes.
 
 Hooks recognize selected patterns, can be bypassed, and fail open on internal
 errors. They do not provide host isolation, access control or complete secret
-detection. See [hook details and limits](docs/HOOKS.md).
+detection. See [hook details and limits](docs/maintainers/hooks.md).
 
 ## Repository map
 
@@ -135,10 +135,12 @@ detection. See [hook details and limits](docs/HOOKS.md).
 | [doctrine.toml](doctrine.toml) | Editable reference rules and their sources. |
 | [safety.py](safety.py), [doctrine.py](doctrine.py) | Setup, generation, checks and the local map server. |
 | [hooks.py](hooks.py), [hooks/](hooks/) | Claude Code event handlers and plugin wiring. |
-| [map.html](map.html) | Self-contained viewer. |
+| [viewer/map.html](viewer/map.html) | Self-contained viewer. |
 | [examples/](examples/) | Sample project and synthetic hook demonstration. |
 | [tests/](tests/) | Checks for setup, generation, hooks and reported coverage. |
-| [sources/](sources/), [docs/](docs/) | Attributed excerpts, adoption and design guides. |
+| [sources/](sources/) | Attributed source excerpts and their local mappings. |
+| [docs/](docs/README.md) | `guides/` for adoption, `reference/` for formats and foundations, `maintainers/` for design and hooks. |
+| [scripts/](scripts/) | Repository checks; the installed command and runtime hooks remain at the root. |
 
 ## Videos and related projects
 
@@ -158,17 +160,18 @@ provides a precedent for editable project constitutions. [Rulesync](https://gith
 provides cross-tool generation; `build --export rulesync` already exports its rule
 format, with downstream generation a separate step.
 
-The [foundations guide](docs/FOUNDATIONS.md) covers research, reusable skills,
+The [foundations guide](docs/reference/foundations.md) covers research, reusable skills,
 external guards and attribution. Safety Core is independently implemented and is
 not currently a Spec Kit extension.
 
 ## More detail
 
-- [Adoption and customization](docs/ADOPTION.md)
-- [Research and reusable foundations](docs/FOUNDATIONS.md)
-- [Agent setup guide](program.md)
-- [Design](docs/DESIGN.md), [map guide](docs/MAP.md), [graph format](docs/GRAPH_SCHEMA.md)
+- [Adoption and customization](docs/guides/adoption.md)
+- [Research and reusable foundations](docs/reference/foundations.md)
+- [Agent setup guide](docs/guides/agent-setup.md)
+- [Design](docs/maintainers/design.md), [map guide](docs/guides/map.md), [graph format](docs/reference/graph-schema.md)
 - Tests: `python3 -m unittest discover -s tests`
+- Repository placement: `python3 scripts/check_repository_structure.py` (also runs in CI)
 
 Safety Core also supports Claude Code plugin installation with a `safety-core`
 skill. Use either plugin hooks or per-project hooks to avoid duplicate execution.

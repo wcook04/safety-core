@@ -1,12 +1,12 @@
 ---
 name: safety-core
-description: Set up plain rules for AI agents in a project and report what is checked versus only reminded. Use when someone asks to set up, adopt, audit or explain the rules agents follow in a repository (AGENTS.md, CLAUDE.md, .claude/rules, hooks), to check which rules are enforced and which are only words, to see what an agent receives at a path, or to inspect the visual rule view. The steps are in program.md; safety.py does the work.
+description: Set up plain rules for AI agents in a project and report what is checked versus only reminded. Use when someone asks to set up, adopt, audit or explain the rules agents follow in a repository (AGENTS.md, CLAUDE.md, .claude/rules, hooks), to check which rules are enforced and which are only words, to see what an agent receives at a path, or to inspect the visual rule view. The steps are in docs/guides/agent-setup.md; safety.py does the work.
 ---
 
 # Safety Core
 
-Read `${CLAUDE_PLUGIN_ROOT}/program.md` and follow it. Outside the plugin, it is
-`program.md` at the root of the Safety Core repository.
+Read `${CLAUDE_PLUGIN_ROOT}/docs/guides/agent-setup.md` and follow it. Outside the plugin, it is
+`docs/guides/agent-setup.md` relative to the Safety Core repository root.
 
 In short:
 

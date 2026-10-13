@@ -26,8 +26,8 @@ Report vulnerabilities through [the private security route](SECURITY.md).
 
 For a new hook check, include a case it should catch and an ordinary action it
 should allow. Keep the standard-library setup and distinguish a reminder from
-an action the configured host actually blocks. The [design guide](docs/DESIGN.md)
-maps the source files and [hook guide](docs/HOOKS.md) explains runtime behaviour.
+an action the configured host actually blocks. The [design guide](docs/maintainers/design.md)
+maps the source files and [hook guide](docs/maintainers/hooks.md) explains runtime behaviour.
 
 The code is [MIT licensed](LICENSE). Keep source credits and respect differing
 terms for any material you add. Discuss the work respectfully and keep reports

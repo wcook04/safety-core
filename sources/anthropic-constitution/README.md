@@ -39,7 +39,7 @@ collection. A citation explains a rule's origin; it is not its enforcement.
 
 A6 and P14 are repository-engineering choices about linking rules to places and
 mechanisms. They draw on agent-tool documentation and other guidance, rather than
-a direct Constitution excerpt. See [foundations](../../docs/FOUNDATIONS.md) for the
+a direct Constitution excerpt. See [foundations](../../docs/reference/foundations.md) for the
 research and upstream implementation precedents.
 
 The official January 2026 Constitution is also available as a
