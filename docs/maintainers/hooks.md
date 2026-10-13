@@ -30,6 +30,11 @@ starts.
 The table is the literal `WIRING` in `hooks.py`; `doctrine.py init` and `hooks/hooks.json`
 both follow it.
 
+The final command-claim check needs Bash receipts from both `PostToolUse` and
+`PostToolUseFailure`. `check` warns if either event is missing or receipt recording
+is off. A wired Stop hook can still check contradictions against Git's current
+state, so that narrower support remains credited.
+
 ## Checks
 
 Each check has a default level. Messages name the principle the doctrine attaches to the
@@ -194,6 +199,14 @@ The irreversible check is a floor, not full coverage. It asks before:
   `cargo publish`, `poetry publish`, `uv publish`, `flit publish` and `gem push`, unless run
   as a dry run;
 - `gh repo create --public` and `gh repo edit --visibility public`.
+
+For publishing, the dry-run exemption recognizes an enabled `--dry-run` on
+`npm`, `pnpm`, `yarn`, `bun`, `cargo`, `poetry` and `uv`. Explicit false values,
+`--no-dry-run` (including `=true`), and flags after `--` do not enable it. `-n` is not a publishing
+dry run: [npm uses it for `--no-yes`](https://docs.npmjs.com/cli/v11/using-npm/config/)
+and [Poetry for `--no-interaction`](https://python-poetry.org/docs/cli/).
+Twine, flit and `gem push` receive no dry-run exemption. This is selected option
+recognition, not a complete parser for every publisher or version.
 
 It also reads the body of `bash -c '...'` and `eval '...'`. For fuller coverage, add a
 semantic shell guard such as nah, cc-safety-net or destructive_command_guard alongside these

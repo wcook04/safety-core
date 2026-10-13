@@ -119,3 +119,16 @@ test unrecognized actions and missing wiring so their limits remain visible.
 
 Protocol tests can be deterministic and need no API key. Separately exercise the
 configured agent host when making claims about that host's runtime integration.
+
+From the Safety Core clone, replay the documented workflow with:
+
+```sh
+python3 -m unittest discover -s tests -p test_adoption_dogfood.py -v
+```
+
+This uses temporary Python projects, the copied CLI, and the hook commands from
+generated settings. It checks preserved instructions, ask/block/ask customization,
+dry runs, map/explain agreement, repeated builds, missing wiring, and a real failing
+test contradicted by a synthetic final claim. It removes the temporary distribution
+after adoption to check that the project stands alone. No publication command or
+agent host is launched.

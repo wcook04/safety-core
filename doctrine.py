@@ -479,6 +479,16 @@ def resolve_enforcers(repo: Repo, matched: dict[str, list[str]]):
                 level = "advise"
             elif event in ("PostToolUse", "PostToolUseFailure", "SessionStart") and mode in ("block", "ask"):
                 level = "remind"
+            receipt_events = check.get("receipt_events", ())
+            if level and receipt_events:
+                if modes.get("receipts") == "off":
+                    notes.append(f"{ref} has receipts off; command-result contradictions are not checked. "
+                                 "Git-state contradictions can still be checked.")
+                else:
+                    for receipt_event in receipt_events:
+                        if not hooks_wired(repo.settings, receipt_event, ("Bash",)):
+                            notes.append(f"{ref} lacks Bash receipts from {receipt_event}; command results from that "
+                                         "event cannot contradict final claims. Git-state contradictions can still be checked.")
             return Enforcer(ref, kind, level, "present", hooks_name)
         if ref in BUILT_IN:
             return Enforcer(ref, kind, BUILT_IN[ref], "present", "doctrine.py")
