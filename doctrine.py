@@ -90,12 +90,26 @@ class Principle:
     sources: tuple[SourceRef, ...] = ()
 
 @dataclass(frozen=True)
+class SkillRef:
+    path: str
+    when: str
+
+
+def local_path(value: object) -> bool:
+    """A literal repository-relative path, never a URL or traversal."""
+    return (isinstance(value, str) and bool(value) and ':' not in value and '\\' not in value
+            and not any(ord(c) < 32 for c in value)
+            and all(p not in ('', '.', '..') for p in value.split('/')))
+
+
+@dataclass(frozen=True)
 class Route:
     id: str
     paths: tuple[str, ...]
     principles: tuple[str, ...]
     reminder: str
     on: tuple[str, ...] = ("edit",)
+    skills: tuple[SkillRef, ...] = ()
 
     def matches(self, rel_path: str) -> bool:
         return any(glob_match(pattern, rel_path) for pattern in self.paths)
@@ -111,6 +125,7 @@ class Doctrine:
     principles: dict[str, Principle] = field(default_factory=dict)
     routes: dict[str, Route] = field(default_factory=dict)
     path: Path | None = None
+    layout_policy: str = ""
 
     def routes_for(self, rel_path: str, trigger: str | None = None) -> list[Route]:
         """Routes whose paths match `rel_path` (and whose triggers include `trigger`)."""
@@ -183,7 +198,10 @@ def from_dict(raw: dict, path: Path | None = None) -> Doctrine:
     meta = raw.get("doctrine", {})
     d = Doctrine(name=str(meta.get("name", "doctrine")), version=str(meta.get("version", "0")),
                  summary=str(meta.get("summary", "")),
-                 entry_budget_lines=int(meta.get("entry_budget_lines", 40)), path=path)
+                 entry_budget_lines=int(meta.get("entry_budget_lines", 40)), path=path,
+                 layout_policy=meta.get("layout_policy", ""))
+    if d.layout_policy and not local_path(d.layout_policy):
+        problems.append("layout_policy must be a repository-relative path")
 
     def items(kind: str, seen: dict) -> Iterable[tuple[str, dict]]:
         for item in raw.get(kind, []):
@@ -209,8 +227,22 @@ def from_dict(raw: dict, path: Path | None = None) -> Doctrine:
             anti=text(item, "anti"), axioms=_strs(item.get("axioms")), enforcement=text(item, "enforcement", "prose"),
             enforced_by=_strs(item.get("enforced_by")), sources=_refs(item.get("sources")))
     for rid, item in items("route", d.routes):
+        skills = []
+        raw_skills = item.get("skills", [])
+        if not isinstance(raw_skills, list):
+            problems.append(f"route {rid}: skills must be a list of path/when tables")
+            raw_skills = []
+        for skill in raw_skills:
+            if (not isinstance(skill, dict) or not local_path(skill.get("path"))
+                    or not skill['path'].endswith('/SKILL.md')
+                    or not isinstance(skill.get('when'), str) or not skill['when'].strip()):
+                problems.append(f"route {rid}: each skill needs a local SKILL.md path and when to use it")
+            elif skill['path'] in {ref.path for ref in skills}:
+                problems.append(f"route {rid}: duplicate skill {skill['path']}")
+            else:
+                skills.append(SkillRef(skill['path'], skill['when']))
         d.routes[rid] = Route(id=rid, paths=_strs(item.get("paths")), principles=_strs(item.get("principles")),
-                              reminder=text(item, "reminder"), on=_strs(item.get("on")) or ("edit",))
+                              reminder=text(item, "reminder"), on=_strs(item.get("on")) or ("edit",), skills=tuple(skills))
 
     for s in d.sources.values():
         if s.quote_policy not in QUOTE_POLICIES:
@@ -543,9 +575,52 @@ def sensitive_kind(rel_path: str) -> str | None:
 def now() -> str:
     return datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
+def layout_roles(repo: Repo) -> tuple[str, dict]:
+    """Read display metadata from the existing project policy; never execute a skill helper."""
+    source = repo.doctrine.layout_policy or 'docs/repository_layout.json'
+    target = repo.root / source
+    if not target.exists() and not repo.doctrine.layout_policy:
+        return '', {}
+    if relative_to_root(target, repo.root) is None:
+        raise DoctrineError(['layout policy must stay inside the repository'])
+    try:
+        policy = json.loads(target.read_text(encoding='utf-8'))
+        if not isinstance(policy, dict) or policy.get('schema') not in ('repository_layout@1', 'repository_layout@2'):
+            raise ValueError('unsupported repository layout schema')
+        roles = policy.get('directories')
+        if not isinstance(roles, dict):
+            raise ValueError('directories must be an object')
+        for name, role in roles.items():
+            if (not local_path(name) or not isinstance(role, dict)
+                    or not isinstance(role.get('purpose'), str) or not role['purpose'].strip()
+                    or ('/' in name and policy['schema'] == 'repository_layout@1')
+                    or ('guide' in role and not local_path(role['guide']))):
+                raise ValueError('invalid directory purpose or guide: ' + str(name))
+        return source, roles
+    except (OSError, ValueError) as exc:
+        raise DoctrineError([f'{source}: {exc}']) from exc
+
+
+def purpose_for(path: str, roles: dict) -> tuple[str, dict]:
+    ancestors = [p for p in roles if path == p or path.startswith(p + '/')]
+    name = max(ancestors, key=lambda p: len(p.split('/')), default='')
+    return name, roles.get(name, {})
+
+
+def skill_details(repo: Repo, route: Route) -> list[dict]:
+    result = []
+    for ref in route.skills:
+        present = ref.path in repo.files and relative_to_root(repo.root / ref.path, repo.root) is not None
+        text = read_text(repo.root / ref.path) if present else None
+        result.append({'path': ref.path, 'when': ref.when,
+                       'status': 'present' if text is not None else 'missing', 'text': text})
+    return result
+
+
 def build_graph(repo: Repo, stale: Iterable[tuple[str, str]] = ()) -> tuple[dict, list[str]]:
     """The doctrine and the repository as one graph (doctrine-map/graph@1), plus link notes."""
     d, files = repo.doctrine, repo.files
+    policy_source, roles = layout_roles(repo)
     matched = {rid: [f for f in files if route.matches(f)] for rid, route in d.routes.items()}
     live = {rid for rid, hits in matched.items() if hits}
     enforcers, entries, notes = resolve_enforcers(repo, matched)
@@ -584,7 +659,10 @@ def build_graph(repo: Repo, stale: Iterable[tuple[str, str]] = ()) -> tuple[dict
     for r in d.routes.values():
         nodes.append({"id": "route:" + r.id, "kind": "route", "name": r.id, "paths": list(r.paths),
                       "reminder": r.reminder, "on": list(r.on), "principles": list(r.principles),
-                      "matches": len(matched[r.id])})
+                      "matches": len(matched[r.id]), "skills": skill_details(repo, r)})
+        gaps += [{"kind": "missing_skill", "id": "route:" + r.id, "path": ref["path"],
+                  "detail": "Route skill is missing or outside the repository: " + ref["path"]}
+                 for ref in skill_details(repo, r) if ref["status"] == "missing"]
         edges += [{"kind": "applies", "from": "route:" + r.id, "to": pid} for pid in r.principles]
         if not matched[r.id]:
             gaps.append({"kind": "dead_route", "id": "route:" + r.id,
@@ -604,12 +682,18 @@ def build_graph(repo: Repo, stale: Iterable[tuple[str, str]] = ()) -> tuple[dict
                 groups.setdefault("/".join(parts[:depth]), []).append(f)
         if len(parts) == 1 and (f in reach or kinds[f]):
             groups[f] = [f]
+    for declared in roles:
+        groups.setdefault(declared, [f for f in files if f.startswith(declared + '/')])
     for path in sorted(groups):
         members, is_dir = groups[path], path not in kinds
+        declared, role = purpose_for(path, roles)
         routed = set().union(*(reach.get(f, set()) for f in members))
         rids = [rid for rid in d.routes if rid in routed]
         nodes.append({"id": "place:" + path, "kind": "place", "name": path + ("/" if is_dir else ""), "path": path,
                       "is_dir": is_dir, "files": len(members), "sensitive": any(kinds[f] for f in members),
+                      "purpose": role.get('purpose'), "purpose_path": declared or None,
+                      "policy_source": policy_source or None, "guide": role.get('guide'),
+                      "observation": 'observed' if members else 'declared_only',
                       "routes": ["route:" + rid for rid in rids],
                       "principles": [pid for pid in d.principles if any(pid in d.routes[r].principles for r in rids)]})
         for rid in rids:
@@ -627,6 +711,10 @@ def build_graph(repo: Repo, stale: Iterable[tuple[str, str]] = ()) -> tuple[dict
         gaps.append({"kind": "unrouted_sensitive", "id": "place:" + path, "path": path,
                      "detail": f"{path} holds {what} files ({shown}) but no route governs them."})
 
+    for name, role in roles.items():
+        if role.get('guide') and (role['guide'] not in files or relative_to_root(repo.root / role['guide'], repo.root) is None):
+            gaps.append({'kind': 'missing_guide', 'id': 'place:' + name, 'path': role['guide'],
+                         'detail': 'Declared owner guide is missing or outside the repository.'})
     for ref, e in enforcers.items():
         nodes.append({"id": "enf:" + ref, "kind": "enforcer", "name": ref, "ref": ref, "type": e.type,
                       "level": e.level, "status": e.status, "file": e.file})
@@ -693,6 +781,8 @@ def outputs(repo: Repo, rulesync: bool = False) -> dict[str, tuple[str, str]]:
     out = {"AGENTS.md": ("region", "\n".join(agents) + "\n"), "CLAUDE.md": ("region", "\n".join(claude) + "\n")}
     for r in d.routes.values():
         body = [header(src), f"# Doctrine route: {r.id}", "", r.reminder]
+        for ref in r.skills:
+            body += ["", f"Workflow: `{ref.path}` — {ref.when}. Read the skill when relevant; a link does not run it."]
         for p in (d.principles[pid] for pid in r.principles):
             body += ["", f"## {p.id} {p.name} [{p.enforcement}]", "", p.one, "", p.three]
         globs = export_globs(r.paths)
@@ -853,7 +943,7 @@ def cmd_check(args: argparse.Namespace) -> int:
     places = [n for n in graph["nodes"] if n["kind"] == "place" and "/" not in n["path"]]
     types = {n["ref"]: n["type"] for n in graph["nodes"] if n["kind"] == "enforcer"}
     live = {n["name"] for n in graph["nodes"] if n["kind"] == "route" and n["matches"]}
-    errors = [g for g in graph["gaps"] if g["kind"] in ("missing_enforcer", "stale_projection", "over_budget")]
+    errors = [g for g in graph["gaps"] if g["kind"] in ("missing_enforcer", "stale_projection", "over_budget", "missing_skill", "missing_guide")]
     warnings = [g for g in graph["gaps"] if g["kind"] in ("dead_route", "unrouted_sensitive")]
     warnings += [{"kind": "link", "detail": note} for note in notes]
     warnings += [{"kind": "level", "id": p["id"], "detail": f"{p['id']} declares {p['declared']} but holds at {p['effective']}."}
@@ -921,6 +1011,14 @@ def cmd_explain(args: argparse.Namespace) -> int:
              or any(e["ref"] in reach and e["status"] == "present" for e in p["enforcers"])]
     wrap = lambda text: textwrap.fill(text, 100, initial_indent="     ", subsequent_indent="     ")  # noqa: E731
     print(f"{rel}\n")
+    policy_source, roles = layout_roles(repo)
+    declared, role = purpose_for(rel, roles)
+    if role:
+        print(f"Purpose: {role['purpose']} (declared at {policy_source}: {declared})")
+        if role.get('guide'):
+            print(f"Owner guide: {role['guide']}")
+    elif policy_source:
+        print(f"Purpose not declared; extend {policy_source} for an ordinary custom folder.")
     print(f"1. On arrival, every agent reads the entry card in AGENTS.md (CLAUDE.md imports it), "
           f"{entry['used']} of {entry['budget']} lines:")
     for line in entry["lines"]:
@@ -930,6 +1028,8 @@ def cmd_explain(args: argparse.Namespace) -> int:
     for r in routes:
         print(f"   {r.id}: rule file .claude/rules/doctrine-{r.id}.md; hook reminder on {', '.join(r.on)}")
         print(wrap(r.reminder))
+        for ref in skill_details(repo, r):
+            print(wrap(f"Workflow [{ref['status']}]: {ref['path']} — {ref['when']} (guidance, not execution)"))
     if local:
         print("\n3. Principles delivered here, and how each holds:")
     for pid in local:
@@ -966,6 +1066,18 @@ def trim_routes(text: str, files: list[str]) -> tuple[str, list[str], list[str]]
         ident = next((m.group(1) for line in chunk if (m := re.match(r'\s*id\s*=\s*"([^"]*)"', line))), "")
         if table == "[[route]]" and ident in dead:
             continue
+        if table == "[[route]]":
+            start = next((i for i, line in enumerate(chunk) if re.match(r'\s*skills\s*=', line)), None)
+            if start is not None:
+                for end in range(start + 1, len(chunk) + 1):
+                    try:
+                        refs = tomllib.loads(''.join(chunk[start:end]))['skills']
+                    except tomllib.TOMLDecodeError:
+                        continue
+                    kept_refs = [r for r in refs if r['path'] in files]
+                    encoded = ', '.join('{ path = ' + json.dumps(r['path']) + ', when = ' + json.dumps(r['when']) + ' }' for r in kept_refs)
+                    chunk[start:end] = ['skills = [' + encoded + ']\n']
+                    break
         for i, line in enumerate(chunk if table == "[[principle]]" else []):
             m = re.match(r"(\s*enforced_by\s*=\s*)\[(.*)\]\s*$", line)
             refs = re.findall(r'"([^"]*)"', m.group(2)) if m else []
@@ -1043,6 +1155,9 @@ class Live:
         watched = [root / ".claude/settings.json", root / ".doctrine/hooks.py", HERE / "hooks.py",
                    root / "AGENTS.md", root / "CLAUDE.md"]
         watched += [root / f for f in files if f.startswith((".claude/rules/", ".rulesync/rules/"))]
+        d = load(self.path)
+        watched.append(root / (d.layout_policy or 'docs/repository_layout.json'))
+        watched += [root / ref.path for route in d.routes.values() for ref in route.skills]
         stats = [(str(p), p.stat().st_mtime_ns, p.stat().st_size) if p.exists() else (str(p),) for p in watched]
         return hashlib.sha256(self.path.read_bytes()).hexdigest(), "\0".join(files), tuple(stats)
 

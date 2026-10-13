@@ -17,7 +17,7 @@ sys.path.insert(0, str(ROOT))
 import doctrine
 
 
-def build(out: Path):
+def build(out: Path, refresh_sample: bool = False):
     out.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix='safety-map-example-') as raw:
         root = Path(raw) / 'demo-repo'
@@ -25,13 +25,37 @@ def build(out: Path):
         subprocess.run(['git', 'init', '-q', str(root)], check=True)
         subprocess.run(['git', '-C', str(root), 'add', '.'], check=True)
         source = root / '.doctrine/doctrine.toml'
-        for name in ('tests', 'empty'):
+        original = source.read_text()
+        for name in ('tests', 'empty', 'purposes'):
+            source.write_text(original)
             if name == 'empty':
                 with source.open('a') as file:
                     file.write('\n# Synthetic review fixture: this path intentionally has no files.\n'
                                '[[route]]\nid = "unused"\npaths = ["unused/**"]\nprinciples = ["P7", "P6"]\n'
                                'reminder = "Check the paths when a route matches no files."\non = ["edit"]\n')
+            if name == 'purposes':
+                skill = 'skills/repository-organization/SKILL.md'
+                (root / skill).parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(ROOT / skill, root / skill)
+                (root / 'field-notes/visits').mkdir(parents=True)
+                (root / 'field-notes/visits/visit-01.md').write_text('# Instrument trial\nA dated observation with its context.\n')
+                policy = {'schema': 'repository_layout@2', 'undeclared_directories': 'warn',
+                          'root_files': [], 'required_files': [], 'content_routes': {},
+                          'directories': {
+                              'src': {'purpose': 'Application source'},
+                              'tests': {'purpose': 'Behaviour checks'},
+                              'field-notes': {'purpose': 'Instrument observations and supporting material'},
+                              'field-notes/visits': {'purpose': 'Dated observations from individual visits'},
+                              'future-samples': {'purpose': 'Planned samples; no visible files yet'}}}
+                (root / 'docs').mkdir(exist_ok=True)
+                (root / 'docs/repository_layout.json').write_text(json.dumps(policy, indent=2) + '\n')
+                with source.open('a') as file:
+                    file.write('\n[[route]]\nid = "field-notes"\npaths = ["field-notes/**"]\n'
+                               'principles = ["P8"]\nreminder = "Keep observations with their evidence."\n'
+                               'skills = [{ path = "' + skill + '", when = "Adding folders or generalising a local organisation lesson" }]\n')
             graph, _ = doctrine.build_graph(doctrine.open_repo(source))
+            if name == 'purposes' and refresh_sample:
+                (ROOT / 'examples/graph.sample.json').write_text(json.dumps(graph, indent=2) + '\n')
             (out / (name + '.json')).write_text(json.dumps(graph, indent=2) + '\n')
             html = doctrine.inject((ROOT / 'map.html').read_text(), graph)
             (out / (name + '.html')).write_text(html)
@@ -42,4 +66,6 @@ def build(out: Path):
 if __name__ == '__main__':
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument('--out', required=True, type=Path)
-    build(p.parse_args().out.resolve())
+    p.add_argument('--refresh-sample', action='store_true', help='Regenerate the viewer fallback from the purpose fixture.')
+    args = p.parse_args()
+    build(args.out.resolve(), args.refresh_sample)

@@ -1,5 +1,5 @@
 {
-  "schema": "repository_layout@1",
+  "schema": "repository_layout@2",
   "root_files": [
     ".gitignore",
     "AGENTS.md",
@@ -41,7 +41,8 @@
         ".jpg",
         ".svg",
         ".yaml"
-      ]
+      ],
+      "guide": "docs/MAP.md"
     },
     "examples": {
       "purpose": "runnable and synthetic examples"
@@ -70,6 +71,10 @@
         ".sh",
         ".md"
       ]
+    },
+    "skills/repository-organization": {
+      "purpose": "Workflow and portable checks for extending each project\u2019s own folder organisation",
+      "guide": "skills/repository-organization/SKILL.md"
     }
   },
   "exceptions": {},
@@ -94,5 +99,6 @@
       "python3 skills/repository-organization/scripts/check_layout.py",
       "python3 skills/repository-organization/scripts/test_check_layout.py"
     ]
-  }
+  },
+  "undeclared_directories": "warn"
 }

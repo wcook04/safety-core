@@ -337,6 +337,8 @@ details.entry pre { font: 11.5px/1.55 var(--mono); white-space: pre-wrap; color:
       <label for="routePick">Trace a route</label>
       <select id="routePick"></select>
       <div id="mobileTrace"></div>
+      <label for="placePick" style="margin-top:20px">Read a folder’s purpose</label>
+      <select id="placePick"></select>
     </section>
     <svg id="map" role="group" aria-label="Safety Core rule view. Use arrow keys to move between marks and Enter to open one. Selecting a route draws its connections."></svg>
     <div class="message" id="message" hidden></div>
@@ -991,6 +993,13 @@ details.entry pre { font: 11.5px/1.55 var(--mono); white-space: pre-wrap; color:
       '<option value="' + esc(r.id) + '">' + esc(r.name || r.id) + ' (' + plural(r.matches || 0, 'matched file') + ')</option>').join('');
     if (picker.innerHTML !== options) picker.innerHTML = options;
     picker.value = S.trace || '';
+    const placePicker = $('placePick');
+    const placeOptions = '<option value="">Choose any place</option>' + M.places.map((pl) =>
+      '<option value="' + esc(pl.id) + '">' + esc(M.pathOf(pl)) +
+      (pl.observation === 'declared_only' ? ' (no visible files)' : '') + '</option>').join('');
+    if (placePicker.innerHTML !== placeOptions) placePicker.innerHTML = placeOptions;
+    placePicker.value = S.selected && S.selected.startsWith('place:') ? S.selected : '';
+
     const r = S.trace && M.byId.get(S.trace);
     if (!r) { box.innerHTML = '<p>Choose a route to read its principles and matched places.</p>'; return; }
     const ps = (M.routePr.get(r.id) || []).map((id) => M.byId.get(id)).filter(Boolean);
@@ -1007,6 +1016,9 @@ details.entry pre { font: 11.5px/1.55 var(--mono); white-space: pre-wrap; color:
     select(S.trace);
     renderTrace();
     $('routePick').focus();
+  });
+  $('placePick').addEventListener('change', (e) => {
+    if (e.target.value) { select(e.target.value); panel.scrollIntoView({ block: 'start' }); }
   });
   $('mobileTrace').addEventListener('click', (e) => {
     const button = e.target.closest('[data-go]');
@@ -1391,15 +1403,35 @@ details.entry pre { font: 11.5px/1.55 var(--mono); white-space: pre-wrap; color:
     if (ps.length) h += '<h3>Principles it carries</h3><ul>' + ps.map(principleRow).join('') + '</ul>' +
       '<p style="font-size:12.5px;color:var(--muted);margin-top:6px">Each principle keeps its own mechanism; the route has no strength of its own.</p>';
     if (r.reminder) h += '<h3>Reminder text</h3><p class="reminder">' + esc(r.reminder) + '</p>';
+    h += skillsHTML(r.skills);
     if (pls.length) h += '<h3>Places it matches</h3><ul>' + pls.map((pl) => rowBtn(pl, '<span class="mono">' + esc(placeName(pl)) + '</span>', matchedPlaceText(r.id, pl))).join('') + '</ul>' +
       '<p style="font-size:12.5px;color:var(--muted);margin-top:6px">A parent is omitted only when the matched files are fully represented by its children. Remaining overlapping counts should not be added. Older snapshots show total files inside each place.</p>';
     return h;
   }
+  function skillsHTML(skills) {
+    if (!skills || !skills.length) return '';
+    return '<h3>Workflows on this route</h3><p>Read the relevant skill before working. These links are guidance; they do not run a workflow or establish enforcement.</p>' + skills.map((skill) =>
+      '<details class="skill-source"><summary><span class="mono">' + esc(skill.path) + '</span>' +
+      (skill.status === 'missing' ? ' · missing' : ' · read skill') + '</summary><p>' + esc(skill.when) + '</p>' +
+      (typeof skill.text === 'string' ? '<pre style="white-space:pre-wrap;overflow-wrap:anywhere;font-size:12px">' + esc(skill.text) + '</pre>' : '<p>Skill text is unavailable in this snapshot. Open the named source in the repository.</p>') + '</details>').join('');
+  }
+
+  function purposeHTML(pl) {
+    if (!pl.policy_source) return '<p>Folder purposes are not supplied by this snapshot.</p>';
+    let h = '<h3>Purpose</h3><p>' + esc(pl.purpose || 'Purpose not declared') + '</p>';
+    if (pl.purpose) h += '<p class="sub">Declared in <span class="mono">' + esc(pl.policy_source) + '</span> for <span class="mono">' + esc(pl.purpose_path) + '/</span>.</p>';
+    else h += '<p>Add a purpose to <span class="mono">' + esc(pl.policy_source) + '</span> when it helps explain this folder. Ordinary folder additions need no new approval.</p>';
+    if (pl.guide) h += '<p>Owner guide: <span class="mono">' + esc(pl.guide) + '</span></p>';
+    if (pl.observation === 'declared_only') h += '<p>No visible files in this snapshot. The folder may be empty, ignored, or not yet created.</p>';
+    return h;
+  }
+
   function placeHTML(pl) {
     const M = S.M;
     const routes = M.plRoutes.get(pl.id) || [];
     let h = '<div class="kind"><span>Place</span><span>' + plural(pl.files || 0, 'file') + '</span>' + (pl.sensitive ? '<span>sensitive</span>' : '') + '</div><h2 class="mono" style="font-size:17px">' + esc(placeName(pl.id)) + '</h2>';
     if (S.standAt === pl.id) h += '<p style="color:var(--muted)">Viewing from here. Everything the configuration does not associate with this place has faded.</p>';
+    h += purposeHTML(pl);
     h += '<h3>Configured for this place</h3>';
     const e = S.graph.entry || {};
     h += '<p><b style="color:var(--ink);font-weight:600">1. The entry card</b>, on arrival: ' + plural((e.lines || []).length, 'line') + ' naming every axiom and principle in one line each.</p>';
@@ -1410,6 +1442,7 @@ details.entry pre { font: 11.5px/1.55 var(--mono); white-space: pre-wrap; color:
         const on = (rn.on || []).map((o) => ON_WORDS[o] || o).join(' or ');
         h += '<div class="route-block"><button type="button" class="row-btn" data-go="' + esc(r) + '"><span class="txt"><span class="rn">route ' + esc(rn.name || r) + '</span><br><span class="on">' + esc(on ? 'delivered when an agent ' + on + ' here' : '') + '</span></span></button>';
         if (rn.reminder) h += '<p class="reminder">' + esc(rn.reminder) + '</p>';
+        h += skillsHTML(rn.skills);
         h += '<ul>' + (M.routePr.get(r) || []).map((id) => M.byId.get(id)).filter(Boolean).map(principleRow).join('') + '</ul></div>';
       }
     } else {

@@ -10,6 +10,8 @@ paths:
 
 Documentation here is read as fact. It describes what exists now and labels plans as plans.
 
+Workflow: `skills/repository-organization/SKILL.md` — Adding folders, declaring purposes, moving files or generalising a local organisation lesson. Read the skill when relevant; a link does not run it.
+
 ## P8 Label claims by their evidence [remind]
 
 Say whether a claim about the repository was checked now, came from pasted evidence, was reported by someone else, or is a guess; describe what exists, not what is planned.
