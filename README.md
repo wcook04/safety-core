@@ -2,6 +2,10 @@
 
 **An editable rulebook and practical checks for your own coding-agent setup.**
 
+Improved with public feedback from **Skitter** (secret-read approval and home/root
+reasons) and **glue72desk** (a prohibitions pass can omit a requested issue).
+[Contribution details and source reports](CONTRIBUTING.md#feedback-contributions).
+
 Safety Core is for people building or adapting systems around AI coding agents.
 You choose the principles, connect them to places in your repository, and inspect
 which ones are instructions, reminders or executable checks. The starting rules
@@ -123,6 +127,14 @@ Only `block`, `ask` and `check` count toward enforced coverage. The report uses
 recognized repository configuration; it does not prove that a host ran a hook,
 that an agent followed a reminder, or that every action described by a principle
 is covered. Read warnings even when `check` passes.
+
+Both the graph and `check --json` name the coverage `basis` as
+`declared_repository_configuration`. Their `not_evaluated` list includes task
+completeness, undeclared requirements and live hook execution. The text report
+states the same boundary before its verdict. A response can obey every declared
+prohibition while omitting a requested issue; a configuration pass does not
+certify that the task is complete. Add a separate task-specific acceptance check
+when an omission must prevent delivery.
 
 Hooks recognize selected patterns, can be bypassed, and fail open on internal
 errors. They do not provide host isolation, access control or complete secret

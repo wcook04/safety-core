@@ -656,7 +656,9 @@ def build_graph(repo: Repo, stale: Iterable[tuple[str, str]] = ()) -> tuple[dict
                      "sha256": hashlib.sha256(Path(d.path).read_bytes()).hexdigest() if d.path else ""},
         "entry": {"lines": entry, "budget": d.entry_budget_lines, "used": len(entry)},
         "nodes": nodes, "edges": edges, "gaps": gaps,
-        "coverage": {"axioms": len(d.axioms), "principles": len(d.principles), "by_level": by_level,
+        "coverage": {"basis": "declared_repository_configuration",
+                     "not_evaluated": ["task_completeness", "undeclared_requirements", "live_hook_execution"],
+                     "axioms": len(d.axioms), "principles": len(d.principles), "by_level": by_level,
                      "enforced_beyond_words": sum(by_level[level] for level in ("block", "ask", "check")), "files_total": len(files),
                      "files_governed": len(reach), "routes_live": len(live), "routes_dead": len(d.routes) - len(live)},
     }, notes
@@ -904,6 +906,8 @@ def cmd_check(args: argparse.Namespace) -> int:
                 print(f"  {g['kind']:<18} {g.get('path') or g.get('id') or '':<24} {g['detail']}")
     plural = lambda n, word: f"{n} {word}" + ("s" if n != 1 else "")  # noqa: E731
     verdict = f"check failed: {plural(len(errors), 'error')}" if errors else "check passed"
+    print("\nScope: declared repository configuration. Task completeness, undeclared requirements "
+          "and live hook execution are not evaluated.")
     print(f"\n{verdict}, {plural(len(warnings), 'warning')}.")
     return 1 if errors else 0
 

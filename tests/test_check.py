@@ -17,6 +17,25 @@ class Check(RepoTestCase):
         self.assertIn("1 of 3 principles enforced beyond words", out)
         self.assertIn("Coverage by place", out)
         self.assertIn("check passed", out)
+        self.assertIn("Task completeness, undeclared requirements and live hook execution are not evaluated", out)
+
+    def test_valid_configuration_does_not_certify_an_incomplete_task(self):
+        # A prohibitions/configuration pass cannot establish that a response
+        # addressed every issue. Keep that boundary in the machine receipt.
+        files = dict(DEMO_FILES, **{
+            "work/request.txt": "A review reports a late appointment and a charge of 149 after a quote of 99.\n",
+            "work/response.txt": "We are sorry your appointment started late.\n",
+        })
+        root = self.make_repo(files)
+        self.build(root)
+        code, out, _ = self.run_cli(root, "check", "--json")
+        report = json.loads(out)
+        self.assertEqual(code, 0, out)
+        self.assertTrue(report["ok"])
+        self.assertEqual(report["coverage"]["basis"], "declared_repository_configuration")
+        self.assertIn("task_completeness", report["coverage"]["not_evaluated"])
+        self.assertIn("undeclared_requirements", report["coverage"]["not_evaluated"])
+        self.assertIn("live_hook_execution", report["coverage"]["not_evaluated"])
 
     def test_coverage_table_marks_each_place(self):
         root = self.make_repo(DEMO_FILES)
