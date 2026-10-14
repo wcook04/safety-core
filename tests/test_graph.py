@@ -106,6 +106,23 @@ class Graph(RepoTestCase):
         settings["hooks"]["PreToolUse"][1]["hooks"] = [own]
         self.assertTrue(doctrine.hooks_wired(settings, "PreToolUse", ["Bash", "Edit", "Write"]))
 
+    def test_optional_secret_read_coverage_requires_opt_in_and_read_wiring(self):
+        source = REFERENCE.read_text().replace('enforced_by = ["hook:pre_tool#secrets"]',
+                                                'enforced_by = ["hook:pre_tool#secret_reads"]')
+        for mode, matcher, expected in ((None, "Read", None), ("ask", "Read", "ask"),
+                                        ("block", "Read", "block"), ("ask", "Bash", None),
+                                        ("record", "Read", None), ("off", "Read", None)):
+            with self.subTest(mode=mode, matcher=matcher):
+                text = source + (f'\n[hooks]\nsecret_reads = "{mode}"\n' if mode else "")
+                root = self.make_repo(DEMO_FILES, doctrine_text=text,
+                                      hooks=(REFERENCE.parent / "hooks.py").read_text())
+                settings = {"hooks": {"PreToolUse": [{"matcher": matcher,
+                             "hooks": [{"type": "command", "command": doctrine.HOOK_COMMAND}]}]}}
+                (root / ".claude/settings.json").write_text(json.dumps(settings))
+                _, notes, nodes = self.graph(root)
+                self.assertEqual(nodes["P11"]["enforcers"][0]["level"], expected)
+                self.assertFalse(any("has level 'off'" in note for note in notes), notes)
+
     def test_ids_are_stable_across_rebuilds(self):
         root = self.make_repo(DEMO_FILES, doctrine_text=REFERENCE.read_text(encoding="utf-8"))
         first, _, _ = self.graph(root)

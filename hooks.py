@@ -41,6 +41,8 @@ CHECKS = {
     "bypass_checks": {"principles": ["P1"], "level": "ask", "event": "PreToolUse", "tools": ["Bash"]},
     # Blocking applies to the commit scan in Bash; Edit/Write content is capped at ask.
     "secrets": {"principles": ["P11"], "level": "block", "event": "PreToolUse", "tools": ["Bash"]},
+    # Opt in through [hooks]; this Read check runs on every matching call, not once per route.
+    "secret_reads": {"principles": ["P11"], "level": "off", "event": "PreToolUse", "tools": ["Read"]},
     "receipts": {"principles": ["P6"], "level": "remind", "event": "PostToolUse", "tools": ["Bash"]},
     "edit_ledger": {"principles": ["P6"], "level": "record", "event": "PostToolUse"},
     "untrusted_content": {"principles": ["P12"], "level": "remind", "event": "PostToolUse"},
@@ -616,7 +618,7 @@ def _danger(target: str, cwd: Path, root: Path | None) -> str:
     path = Path(os.path.realpath(os.path.join(cwd, os.path.expanduser(t))))
     home = Path(os.path.realpath(os.path.expanduser("~")))
     if path == Path(path.anchor):
-        return "the filesystem root"
+        return "the filesystem root (also the resolved home directory)" if path == home else "the filesystem root"
     if path == home:
         return "the home directory"
     if root is not None:
@@ -893,6 +895,11 @@ def pre_tool(ctx: Ctx, out: Out) -> None:
         rel = ctx.rel(ti.get("file_path") or "")
         if rel is not None:
             reminders(ctx, out, [(rel, "read")])
+            if ctx.doctrine and ctx.mode("secret_reads") not in ("off", "record"):
+                if any(route.id == "secrets" for route in ctx.doctrine.routes_for(rel, "read")):
+                    out.add("secret_reads", f"Safety Core: `{rel}` matches the configured secrets read route. "
+                            "The check runs again for the next matching Read call. "
+                            "The file's contents have not been inspected by this check.")
     elif tool == "Bash":
         bash(ctx, out, str(ti.get("command") or ""))
 

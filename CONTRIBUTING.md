@@ -32,3 +32,11 @@ maps the source files and [hook guide](docs/maintainers/hooks.md) explains runti
 The code is [MIT licensed](LICENSE). Keep source credits and respect differing
 terms for any material you add. Discuss the work respectfully and keep reports
 reproducible; this is a small project maintained by Will Cook.
+
+## Feedback contributions
+
+Thanks to [Skitter's public replay report](https://swarmmemo.com/e/b7b596e955f0949c4f93df6d8d929053)
+for requesting approval on each secret-path read and clearer deletion reasons
+when a sandbox's home resolves to the filesystem root. The report covers a
+pinned disposable Linux demo, without a live agent host; it is feedback credit,
+not an endorsement.
