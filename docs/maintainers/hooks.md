@@ -49,6 +49,7 @@ check: a principle whose `enforced_by` names it (any reference ending in `#<chec
 | `irreversible` | PreToolUse | ask | P2 | Asks before the commands in "The built-in guard" below, naming what each will do. |
 | `bypass_checks` | PreToolUse | ask | P1 | Asks before a command that skips or switches off the hooks that run on commit, push and merge: `--no-verify` on `git commit`, `push` or `merge`, `git commit -n` (read the way git reads short options, so `-m -n` is a message), `HUSKY=0`, `SKIP=` alongside a commit or a pre-commit run, setting or unsetting `core.hooksPath` (including `git -c core.hooksPath=...`), and `pre-commit uninstall`. Mentions such as `grep -- --no-verify` or a commit message containing the words are left alone. |
 | `secrets` | PreToolUse | block | P11 | Blocks a `git commit` whose changes hold a key-shaped value or a `.env` file, naming the file and line but never the value. Asks before an Edit or Write whose new content holds a key shape, unless git ignores the file. |
+| `secret_reads` | PreToolUse | off | P11 | Optional check on every Read matched by the configured `secrets` route's read paths. Set to `ask` for approval or `block` to deny. Does not inspect contents or share reminder deduplication. |
 | `receipts` | PostToolUse | remind | P6 | Records every shell command and how it exited. The first time a test, build, commit or push fails in a session, notes that the end-of-turn check will compare claims with this record. |
 | `edit_ledger` | PostToolUse | record | P6 | Records each path changed through Edit, Write, MultiEdit or NotebookEdit. |
 | `untrusted_content` | PostToolUse | remind | P12 | After WebFetch, WebSearch or any tool whose name contains "fetch" or "browse", notes once per tool per session that the fetched text did not come from the person. |
@@ -88,6 +89,36 @@ entry_on_startup = true    # also deliver the entry card when a session starts
 | `advise` | a warning to the person | a warning to the person | a warning to the person | a warning to the person |
 | `record` | nothing said | nothing said; the record is kept | nothing said | nothing said |
 | `off` | the check does not run | the check does not run, and nothing is recorded | the check does not run | the check does not run |
+
+### Approval for each secret-path read
+
+To ask before every matching Claude Code Read call, add this to your doctrine:
+
+```toml
+[hooks]
+secret_reads = "ask"
+```
+
+This check is off by default and uses the `secrets` route with `on = ["read", ...]`.
+Edit that route's `paths` to match your project. If adoption dropped the route
+because no secret paths existed, restore it from the reference doctrine first.
+The reference route also includes
+`.env.example` through `.env.*`; narrow it if those examples should be readable
+without approval. The check runs for repeated reads even when the reminder has
+already appeared, and works with `reminders = "off"`. It never reads the file's
+contents itself.
+
+The boundary is the configured route inside the repository and the `Read` tool;
+shell commands, other tools, paths outside the repository and unconfigured paths
+are not covered. A `PreToolUse` matcher must include `Read`, and the host must
+actually run the hook. Setting all reminders to `ask` still asks only once per
+route per session and is not a substitute for this check. To include its
+configuration in the coverage map, add `hook:pre_tool#secret_reads` to the relevant
+principle's `enforced_by`, retaining any existing commit-scan reference.
+
+Recursive-delete reasons name the resolved target. If a sandbox sets its home to
+`/`, deleting `~` is described as the filesystem root and also the resolved home
+directory. An ordinary home still receives the home-directory reason.
 
 On Stop, a note to Claude would cost an extra turn, so every mode but `block` becomes a
 warning to the person. Key shapes in Edit or Write content are asked about at most, never

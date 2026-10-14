@@ -52,6 +52,52 @@ class Reminders(HookCase):
         self.assertIn('"tests"', self.context(self.pre("Edit", file_path=str(self.repo / "tests/test_app.py"), old_string="a", new_string="b")))
 
 
+class SecretReads(HookCase):
+    hooks_table = 'secret_reads = "ask"'
+
+    def test_each_secret_read_asks_even_after_the_route_reminder(self):
+        for rel in (".env", ".env", "secrets/keys.txt"):
+            with self.subTest(rel=rel):
+                out = self.pre("Read", file_path=str(self.repo / rel))
+                self.assertEqual(self.decision(out), "ask")
+                self.assertIn("P11", self.reason(out))
+                self.assertIn("next matching Read", self.reason(out))
+
+    def test_relative_paths_and_ordinary_reads(self):
+        self.assertEqual(self.decision(self.pre("Read", file_path=".env.local")), "ask")
+        self.assertIsNone(self.pre("Read", file_path="src/app.py"))
+        self.assertIsNone(self.pre("Read", file_path=str(self.base / ".env")))
+
+    def test_uses_the_configured_route_without_reading_contents(self):
+        path = self.repo / "doctrine.toml"
+        path.write_text(path.read_text().replace('paths = [".env", ".env.*", "**/*.pem", "**/*.key", "secrets/**", "**/credentials*"]',
+                                                 'paths = ["private-config/**"]'))
+        self.assertIsNone(self.pre("Read", file_path=".env"))
+        with mock.patch.object(hooks, "shapes", side_effect=AssertionError("must not inspect secret values")):
+            self.assertEqual(self.decision(self.pre("Read", file_path="private-config/settings.txt")), "ask")
+
+
+class SecretReadsWithoutReminders(SecretReads):
+    hooks_table = 'secret_reads = "ask"\nreminders = "off"'
+
+
+class SecretReadModes(HookCase):
+    def test_default_is_off_and_overrides_do_not_change_other_checks(self):
+        self.assertEqual(self.decision(self.pre("Read", file_path=".env")), "")
+        path = self.repo / "doctrine.toml"
+        source = path.read_text()
+        for mode, expected in (("block", "deny"), ("ask", "ask"), ("remind", ""), ("off", ""), ("record", "")):
+            with self.subTest(mode=mode):
+                path.write_text(source + f'\n[hooks]\nsecret_reads = "{mode}"\nreminders = "off"\n')
+                out = self.pre("Read", file_path=".env")
+                self.assertEqual(self.decision(out), expected)
+                if mode == "remind":
+                    self.assertIn("next matching Read", self.context(out))
+                elif mode in ("off", "record"):
+                    self.assertIsNone(out)
+                self.assertEqual(self.decision(self.bash("git push --force origin main")), "ask")
+
+
 class RuleFiles(HookCase):
     def test_edit_to_rule_files_asks(self):
         for rel in ("CLAUDE.md", "AGENTS.md", "docs/AGENTS.md", ".claude/settings.json", "doctrine.toml",
@@ -88,6 +134,17 @@ class Irreversible(HookCase):
 
     def test_cd_changes_what_relative_paths_mean(self):
         self.assertEqual(self.decision(self.bash("cd src && rm -rf ..")), "ask")
+
+    def test_home_reason_names_root_when_home_resolves_there(self):
+        with mock.patch.dict(os.environ, {"HOME": "/"}):
+            for target in ("~", "$HOME", "${HOME}"):
+                with self.subTest(target=target):
+                    out = self.bash("rm -rf " + target)
+                    self.assertEqual(self.decision(out), "ask")
+                    self.assertIn("the filesystem root (also the resolved home directory)", self.reason(out))
+        with mock.patch.dict(os.environ, {"HOME": str(self.base / "home")}):
+            self.assertIn("the home directory", self.reason(self.bash("rm -rf ~")))
+            self.assertNotIn("resolved home", self.reason(self.bash("rm -rf /")))
 
 
 class BypassChecks(HookCase):
@@ -304,6 +361,19 @@ class InitLayout(HookCase):
         out = self.run_command(["sh", "-c", command], payload, CLAUDE_PROJECT_DIR=str(self.repo))
         self.assertIn('routes `db/migrations/001.sql` to "migrations"', self.context(out))
 
+    def test_adopted_copy_asks_for_each_secret_read_without_reminders(self):
+        self.write(".env", "DEMO_REGION=example\n")
+        done = subprocess.run([sys.executable, str(ROOT / "safety.py"), "init", "--target", str(self.repo)],
+                              capture_output=True, text=True, cwd=str(self.repo))
+        self.assertEqual(done.returncode, 0, done.stdout + done.stderr)
+        path = self.repo / ".doctrine/doctrine.toml"
+        path.write_text(path.read_text() + '\n[hooks]\nsecret_reads = "ask"\nreminders = "off"\n')
+        command = json.loads((self.repo / ".claude/settings.json").read_text())["hooks"]["PreToolUse"][0]["hooks"][0]["command"]
+        for rel, expected in ((".env", "ask"), (".env", "ask"), ("src/app.py", "")):
+            payload = self.payload("PreToolUse", tool_name="Read", tool_input={"file_path": str(self.repo / rel)})
+            out = self.run_command(["sh", "-c", command], payload, CLAUDE_PROJECT_DIR=str(self.repo))
+            self.assertEqual(self.decision(out), expected)
+
 
 class NoDoctrine(HookCase):
     doctrine = False
@@ -358,11 +428,15 @@ class Wiring(unittest.TestCase):
         tree = ast.parse((ROOT / "hooks.py").read_text(encoding="utf-8"))
         node = next(n for n in tree.body if isinstance(n, ast.Assign) and any(getattr(t, "id", "") == "CHECKS" for t in n.targets))
         checks = ast.literal_eval(node.value)
-        self.assertEqual(set(checks), {"reminders", "rule_files", "masked_status", "irreversible", "bypass_checks", "secrets", "receipts",
+        self.assertEqual(set(checks), {"reminders", "rule_files", "masked_status", "irreversible", "bypass_checks", "secrets", "secret_reads", "receipts",
                                        "edit_ledger", "untrusted_content", "unsupported_claim", "permission_gate", "dirty_tree",
                                        "unlogged_mistake", "entry_card"})
         for check, spec in checks.items():
             expected = {"principles", "level", "event"}
+            if check == "secret_reads":
+                expected.add("tools")
+                self.assertEqual(spec["tools"], ["Read"])
+                self.assertEqual(spec["level"], "off")
             if check in {"rule_files", "masked_status", "irreversible", "bypass_checks", "secrets", "receipts"}:
                 expected.add("tools")
                 tools = spec["tools"]

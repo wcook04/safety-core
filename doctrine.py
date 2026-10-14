@@ -460,8 +460,8 @@ def resolve_enforcers(repo: Repo, matched: dict[str, list[str]]):
             if check is None:
                 why = f"{hooks_name} has no check {rest.partition('#')[2]!r}" if hooks_file.exists() else f"{hooks_name} not found"
                 return Enforcer(ref, kind, None, "missing", hooks_name, why)
-            if check.get("level") not in LEVELS:
-                notes.append(f"{ref} has level {check.get('level')!r}, not one of {', '.join(LEVELS)}")
+            if check.get("level") not in (*LEVELS, "off", "record"):
+                notes.append(f"{ref} has level {check.get('level')!r}, not one of {', '.join((*LEVELS, 'off', 'record'))}")
             key = rest.partition("#")[2]
             event = check.get("event") or {"pre_tool": "PreToolUse", "post_tool": "PostToolUse"}.get(
                 rest.partition("#")[0], "Stop" if kind == "stop" else "")
