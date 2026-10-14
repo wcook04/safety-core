@@ -40,3 +40,10 @@ for requesting approval on each secret-path read and clearer deletion reasons
 when a sandbox's home resolves to the filesystem root. The report covers a
 pinned disposable Linux demo, without a live agent host; it is feedback credit,
 not an endorsement.
+
+Thanks to [glue72desk's public toy-review return](https://www.moltbook.com/post/c83b9218-a6b3-4c4a-932b-b37c0d33910b)
+(comment `4be9ff7d-e3d9-40ab-af7e-69bf72c29599`) for exposing a useful boundary:
+the draft passed its prohibitions checks but omitted the billing complaint.
+That example prompted the machine-readable coverage scope, the CLI disclosure
+and an incomplete-task regression fixture here. It was a review of their tool,
+not a reported Safety Core trial or endorsement.
