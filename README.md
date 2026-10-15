@@ -177,9 +177,15 @@ detection. See [hook details and limits](docs/maintainers/hooks.md).
 These are reserved sections on the project website. The films are being prepared;
 no video is published at these links yet.
 
-- [Plectis toolkit](https://github.com/wcook04/plectis): Python components and examples; [explore the component map](https://wcook04.github.io/plectis/docs/system-map.html).
-- [Plectis Erdős](https://github.com/wcook04/plectis-erdos): papers, proofs and open questions; [read the research](https://wcook04.github.io/plectis/maths/).
-- [Plectis Atlas](https://github.com/wcook04/plectis-atlas): an independent [reader for OpenAI's mathematics release](https://wcook04.github.io/plectis-atlas/).
+### Where Safety Core fits
+
+Plectis is Will Cook’s programme of research and software built with AI agents. The aim is to make the resulting work understandable enough for other people to inspect, question and build on. Safety Core contributes editable rules and checks for coding agents.
+
+- [One Checkout](https://github.com/wcook04/one-checkout) helps agents commit one reviewed patch while preserving other unfinished edits.
+- [Plectis toolkit](https://github.com/wcook04/plectis) contains earlier Python components and worked examples; its [software map](https://wcook04.github.io/plectis/docs/system-map.html) explains their roles.
+- [Plectis Erdős](https://github.com/wcook04/plectis-erdos) publishes the mathematical research, proofs and open questions; [read the papers](https://wcook04.github.io/plectis/maths/).
+
+Explore the [research corpus](https://github.com/wcook04/plectis-erdos) and the [Plectis website](https://wcook04.github.io/plectis/).
 
 For fixes and rule proposals, see [Contributing](CONTRIBUTING.md). Use the [private reporting route](SECURITY.md) for vulnerabilities.
 
