@@ -1,17 +1,17 @@
 {
   "schema": "doctrine-map/graph@1",
-  "generated_at": "2026-10-13T00:21:30Z",
+  "generated_at": "2026-10-13T15:59:23Z",
   "repository": {
     "name": "demo-repo",
-    "files_total": 24,
-    "commit": "9895462"
+    "files_total": 27,
+    "commit": null
   },
   "doctrine": {
     "name": "safety-core",
     "version": "0.1.0",
     "summary": "Seven axioms and fifteen principles for AI agents working in a code repository, grounded in published guidance from Anthropic, OpenAI, OWASP, MITRE and OpenSSF.",
     "source": ".doctrine/doctrine.toml",
-    "sha256": "d6e56051a20fde1cb00f070ba74e81e3b43e176eb757065c0095f949e7fdbbe4"
+    "sha256": "93909610b143a6713cd858380493b218752a4f6930b094907197bedb3fc35092"
   },
   "entry": {
     "lines": [
@@ -91,7 +91,7 @@
         {
           "ref": "anthropic.constitution",
           "at": "why-helpfulness-is-one-of-claudes-most-important-traits",
-          "quote": "unhelpfulness is never trivially \"safe” from Anthropic’s perspective."
+          "quote": "unhelpfulness is never trivially \"safe\u201d from Anthropic\u2019s perspective."
         },
         {
           "ref": "owasp.llm-top10-2025",
@@ -101,7 +101,7 @@
         {
           "ref": "openai.model-spec",
           "at": "",
-          "quote": "minimize side effects — especially irreversible ones"
+          "quote": "minimize side effects \u2014 especially irreversible ones"
         },
         {
           "ref": "anthropic.auto-mode",
@@ -161,7 +161,7 @@
         {
           "ref": "anthropic.constitution",
           "at": "being-honest",
-          "quote": "Non-deceptive: Claude never tries to create false impressions of itself or the world in the user’s mind"
+          "quote": "Non-deceptive: Claude never tries to create false impressions of itself or the world in the user\u2019s mind"
         }
       ]
     },
@@ -251,7 +251,7 @@
         {
           "ref": "anthropic.constitution",
           "at": "safe-behaviors",
-          "quote": "Avoiding actions that would influence your own training or adjust your own behavior or values in a way that isn’t sanctioned by an appropriate principal."
+          "quote": "Avoiding actions that would influence your own training or adjust your own behavior or values in a way that isn\u2019t sanctioned by an appropriate principal."
         },
         {
           "ref": "mitre.atlas",
@@ -411,7 +411,7 @@
         {
           "ref": "anthropic.constitution",
           "at": "being-honest",
-          "quote": "Non-deceptive: Claude never tries to create false impressions of itself or the world in the user’s mind, whether through actions"
+          "quote": "Non-deceptive: Claude never tries to create false impressions of itself or the world in the user\u2019s mind, whether through actions"
         }
       ]
     },
@@ -725,7 +725,7 @@
         {
           "ref": "anthropic.constitution",
           "at": "safe-behaviors",
-          "quote": "Avoiding actions that would influence your own training or adjust your own behavior or values in a way that isn’t sanctioned by an appropriate principal."
+          "quote": "Avoiding actions that would influence your own training or adjust your own behavior or values in a way that isn\u2019t sanctioned by an appropriate principal."
         },
         {
           "ref": "mitre.atlas",
@@ -759,7 +759,8 @@
         "P15",
         "P1"
       ],
-      "matches": 12
+      "matches": 12,
+      "skills": []
     },
     {
       "id": "route:ci",
@@ -780,7 +781,8 @@
         "P1",
         "P2"
       ],
-      "matches": 1
+      "matches": 1,
+      "skills": []
     },
     {
       "id": "route:infrastructure",
@@ -805,7 +807,8 @@
         "P2",
         "P13"
       ],
-      "matches": 1
+      "matches": 1,
+      "skills": []
     },
     {
       "id": "route:migrations",
@@ -827,7 +830,8 @@
         "P2",
         "P4"
       ],
-      "matches": 2
+      "matches": 2,
+      "skills": []
     },
     {
       "id": "route:secrets",
@@ -849,7 +853,8 @@
       "principles": [
         "P11"
       ],
-      "matches": 1
+      "matches": 1,
+      "skills": []
     },
     {
       "id": "route:tests",
@@ -872,7 +877,8 @@
         "P7",
         "P6"
       ],
-      "matches": 1
+      "matches": 1,
+      "skills": []
     },
     {
       "id": "route:dependencies",
@@ -893,7 +899,8 @@
       "principles": [
         "P13"
       ],
-      "matches": 1
+      "matches": 1,
+      "skills": []
     },
     {
       "id": "route:docs",
@@ -910,7 +917,32 @@
       "principles": [
         "P8"
       ],
-      "matches": 2
+      "matches": 3,
+      "skills": []
+    },
+    {
+      "id": "route:field-notes",
+      "kind": "route",
+      "name": "field-notes",
+      "paths": [
+        "field-notes/**"
+      ],
+      "reminder": "Keep observations with their evidence.",
+      "on": [
+        "edit"
+      ],
+      "principles": [
+        "P8"
+      ],
+      "matches": 1,
+      "skills": [
+        {
+          "path": "skills/repository-organization/SKILL.md",
+          "when": "Adding folders or generalising a local organisation lesson",
+          "status": "present",
+          "text": "---\nname: repository-organization\ndescription: Use for folder organization, placing new files, tree moves or new file families. Consult local directory roles, preserve published and installed interfaces, and run the executable worktree and staged layout gates.\n---\n\n# Repository organization\n\nRead this repository's entry, README, package configuration and directory owners.\n`docs/repository_layout.json` declares the root interfaces, directory responsibilities,\nrequired owners, executable route checks and documented compatibility exceptions.\nChoose a file's home by its consumer; do not split folders merely because of counts.\n\nPreserve imports, CLI names, published links, installed resources, generated provenance\nand historical evidence. Before moving a path, inspect its consumers and write an\nold-to-new mapping. Edit source owners before rebuilding generated files. Use the\nrepository's existing architecture workflow if an ownership boundary changes.\n\nUpdate the README map and concrete role policy with a deliberate new interface or\nfamily. A placement exception needs its exact path and reason; do not exempt a whole\nfuture family to make a check pass. Keep executable commands under their tool owner,\ntests under their test owner, and documentation assets beside their guides.\n\nFrom the repository root:\n\n```sh\npython3 skills/repository-organization/scripts/check_layout.py\npython3 skills/repository-organization/scripts/test_check_layout.py\n# After staging the exact owned paths:\npython3 skills/repository-organization/scripts/check_layout.py --index\n```\n\nThe working check sees tracked and nonignored untracked files, excluding files deleted\nfrom the working tree. The index check reads staged paths, policy and route contents.\nBoth use NUL-delimited Git candidates and never descend into ignored build trees.\nCI runs the same gate and negative fixtures. Keep existing hooks and hooksPath.\nRun the affected behavior and packaging checks, then commit only owned paths.\n\nThe portable check and fixtures are copied from the repository-organization skill\nasset; project roles remain local. No private runtime or sibling checkout is required.\n\n## Add a folder for your purpose\n\nCreate folders that suit this project. Ordinary reversible folder additions and\npurpose declarations need no new approval. Add a `directories` entry in the local\npolicy, for example `\"field-notes\": {\"purpose\": \"Instrument observations and supporting material\"}`.\nUpdate the README map when this becomes a maintained part of the project.\n\n`undeclared_directories: \"warn\"` reports new folders without blocking them.\nProjects may choose `\"error\"` to require declaration before landing; older policies\nwithout this setting remain strict. Declared placement constraints, required\nowners, root interfaces and route checks still apply in either mode. There is no\nuniversal folder template. Suffix restrictions are optional project decisions.\n\nThe `repository_layout@2` policy accepts nested declarations such as\n`field-notes/instruments`. The deepest declaration explains the local purpose;\nall ancestor placement constraints still hold. An optional `guide` names an\nexisting repository-relative owner document, checked in the same Git view.\nDo not use broad exceptions to introduce a legitimate new purpose.\n\nPreserve a local lesson in this workflow and a regression fixture. Generalise the\nreusable rule into the canonical skill or helper when evidence supports it, while\nkeeping this project's folder names and purposes local. Existing skill registries\nand builders remain the owners of routing and generated mirrors.\n"
+        }
+      ]
     },
     {
       "id": "place:.claude",
@@ -920,6 +952,11 @@
       "is_dir": true,
       "files": 8,
       "sensitive": false,
+      "purpose": null,
+      "purpose_path": null,
+      "policy_source": "docs/repository_layout.json",
+      "guide": null,
+      "observation": "observed",
       "routes": [
         "route:agent-rules"
       ],
@@ -936,6 +973,11 @@
       "is_dir": true,
       "files": 8,
       "sensitive": false,
+      "purpose": null,
+      "purpose_path": null,
+      "policy_source": "docs/repository_layout.json",
+      "guide": null,
+      "observation": "observed",
       "routes": [
         "route:agent-rules"
       ],
@@ -952,6 +994,11 @@
       "is_dir": true,
       "files": 2,
       "sensitive": false,
+      "purpose": null,
+      "purpose_path": null,
+      "policy_source": "docs/repository_layout.json",
+      "guide": null,
+      "observation": "observed",
       "routes": [
         "route:agent-rules"
       ],
@@ -968,6 +1015,11 @@
       "is_dir": false,
       "files": 1,
       "sensitive": true,
+      "purpose": null,
+      "purpose_path": null,
+      "policy_source": "docs/repository_layout.json",
+      "guide": null,
+      "observation": "observed",
       "routes": [
         "route:secrets"
       ],
@@ -983,6 +1035,11 @@
       "is_dir": true,
       "files": 1,
       "sensitive": true,
+      "purpose": null,
+      "purpose_path": null,
+      "policy_source": "docs/repository_layout.json",
+      "guide": null,
+      "observation": "observed",
       "routes": [
         "route:ci"
       ],
@@ -999,6 +1056,11 @@
       "is_dir": true,
       "files": 1,
       "sensitive": true,
+      "purpose": null,
+      "purpose_path": null,
+      "policy_source": "docs/repository_layout.json",
+      "guide": null,
+      "observation": "observed",
       "routes": [
         "route:ci"
       ],
@@ -1015,6 +1077,11 @@
       "is_dir": false,
       "files": 1,
       "sensitive": false,
+      "purpose": null,
+      "purpose_path": null,
+      "policy_source": "docs/repository_layout.json",
+      "guide": null,
+      "observation": "observed",
       "routes": [
         "route:agent-rules"
       ],
@@ -1031,6 +1098,11 @@
       "is_dir": false,
       "files": 1,
       "sensitive": false,
+      "purpose": null,
+      "purpose_path": null,
+      "policy_source": "docs/repository_layout.json",
+      "guide": null,
+      "observation": "observed",
       "routes": [
         "route:agent-rules"
       ],
@@ -1047,6 +1119,11 @@
       "is_dir": false,
       "files": 1,
       "sensitive": false,
+      "purpose": null,
+      "purpose_path": null,
+      "policy_source": "docs/repository_layout.json",
+      "guide": null,
+      "observation": "observed",
       "routes": [
         "route:docs"
       ],
@@ -1062,6 +1139,11 @@
       "is_dir": true,
       "files": 2,
       "sensitive": true,
+      "purpose": null,
+      "purpose_path": null,
+      "policy_source": "docs/repository_layout.json",
+      "guide": null,
+      "observation": "observed",
       "routes": [
         "route:migrations"
       ],
@@ -1078,6 +1160,11 @@
       "is_dir": true,
       "files": 2,
       "sensitive": true,
+      "purpose": null,
+      "purpose_path": null,
+      "policy_source": "docs/repository_layout.json",
+      "guide": null,
+      "observation": "observed",
       "routes": [
         "route:migrations"
       ],
@@ -1092,14 +1179,75 @@
       "name": "docs/",
       "path": "docs",
       "is_dir": true,
-      "files": 1,
+      "files": 2,
       "sensitive": false,
+      "purpose": null,
+      "purpose_path": null,
+      "policy_source": "docs/repository_layout.json",
+      "guide": null,
+      "observation": "observed",
       "routes": [
         "route:docs"
       ],
       "principles": [
         "P8"
       ]
+    },
+    {
+      "id": "place:field-notes",
+      "kind": "place",
+      "name": "field-notes/",
+      "path": "field-notes",
+      "is_dir": true,
+      "files": 1,
+      "sensitive": false,
+      "purpose": "Instrument observations and supporting material",
+      "purpose_path": "field-notes",
+      "policy_source": "docs/repository_layout.json",
+      "guide": null,
+      "observation": "observed",
+      "routes": [
+        "route:field-notes"
+      ],
+      "principles": [
+        "P8"
+      ]
+    },
+    {
+      "id": "place:field-notes/visits",
+      "kind": "place",
+      "name": "field-notes/visits/",
+      "path": "field-notes/visits",
+      "is_dir": true,
+      "files": 1,
+      "sensitive": false,
+      "purpose": "Dated observations from individual visits",
+      "purpose_path": "field-notes/visits",
+      "policy_source": "docs/repository_layout.json",
+      "guide": null,
+      "observation": "observed",
+      "routes": [
+        "route:field-notes"
+      ],
+      "principles": [
+        "P8"
+      ]
+    },
+    {
+      "id": "place:future-samples",
+      "kind": "place",
+      "name": "future-samples/",
+      "path": "future-samples",
+      "is_dir": true,
+      "files": 0,
+      "sensitive": false,
+      "purpose": "Planned samples; no visible files yet",
+      "purpose_path": "future-samples",
+      "policy_source": "docs/repository_layout.json",
+      "guide": null,
+      "observation": "declared_only",
+      "routes": [],
+      "principles": []
     },
     {
       "id": "place:infra",
@@ -1109,6 +1257,11 @@
       "is_dir": true,
       "files": 1,
       "sensitive": true,
+      "purpose": null,
+      "purpose_path": null,
+      "policy_source": "docs/repository_layout.json",
+      "guide": null,
+      "observation": "observed",
       "routes": [
         "route:infrastructure"
       ],
@@ -1125,12 +1278,49 @@
       "is_dir": false,
       "files": 1,
       "sensitive": false,
+      "purpose": null,
+      "purpose_path": null,
+      "policy_source": "docs/repository_layout.json",
+      "guide": null,
+      "observation": "observed",
       "routes": [
         "route:dependencies"
       ],
       "principles": [
         "P13"
       ]
+    },
+    {
+      "id": "place:skills",
+      "kind": "place",
+      "name": "skills/",
+      "path": "skills",
+      "is_dir": true,
+      "files": 1,
+      "sensitive": false,
+      "purpose": null,
+      "purpose_path": null,
+      "policy_source": "docs/repository_layout.json",
+      "guide": null,
+      "observation": "observed",
+      "routes": [],
+      "principles": []
+    },
+    {
+      "id": "place:skills/repository-organization",
+      "kind": "place",
+      "name": "skills/repository-organization/",
+      "path": "skills/repository-organization",
+      "is_dir": true,
+      "files": 1,
+      "sensitive": false,
+      "purpose": null,
+      "purpose_path": null,
+      "policy_source": "docs/repository_layout.json",
+      "guide": null,
+      "observation": "observed",
+      "routes": [],
+      "principles": []
     },
     {
       "id": "place:src",
@@ -1140,6 +1330,11 @@
       "is_dir": true,
       "files": 3,
       "sensitive": false,
+      "purpose": "Application source",
+      "purpose_path": "src",
+      "policy_source": "docs/repository_layout.json",
+      "guide": null,
+      "observation": "observed",
       "routes": [],
       "principles": []
     },
@@ -1151,6 +1346,11 @@
       "is_dir": true,
       "files": 1,
       "sensitive": false,
+      "purpose": "Behaviour checks",
+      "purpose_path": "tests",
+      "policy_source": "docs/repository_layout.json",
+      "guide": null,
+      "observation": "observed",
       "routes": [
         "route:tests"
       ],
@@ -2006,79 +2206,180 @@
       "to": "P8"
     },
     {
-      "kind": "governs",
-      "from": "route:agent-rules",
-      "to": "place:.claude"
+      "kind": "applies",
+      "from": "route:field-notes",
+      "to": "P8"
     },
     {
       "kind": "governs",
       "from": "route:agent-rules",
-      "to": "place:.claude/rules"
+      "to": "place:.claude",
+      "matches": 8,
+      "matched_files": [
+        ".claude/rules/doctrine-agent-rules.md",
+        ".claude/rules/doctrine-ci.md",
+        ".claude/rules/doctrine-dependencies.md",
+        ".claude/rules/doctrine-docs.md",
+        ".claude/rules/doctrine-infrastructure.md",
+        ".claude/rules/doctrine-migrations.md",
+        ".claude/rules/doctrine-secrets.md",
+        ".claude/rules/doctrine-tests.md"
+      ]
     },
     {
       "kind": "governs",
       "from": "route:agent-rules",
-      "to": "place:.doctrine"
+      "to": "place:.claude/rules",
+      "matches": 8,
+      "matched_files": [
+        ".claude/rules/doctrine-agent-rules.md",
+        ".claude/rules/doctrine-ci.md",
+        ".claude/rules/doctrine-dependencies.md",
+        ".claude/rules/doctrine-docs.md",
+        ".claude/rules/doctrine-infrastructure.md",
+        ".claude/rules/doctrine-migrations.md",
+        ".claude/rules/doctrine-secrets.md",
+        ".claude/rules/doctrine-tests.md"
+      ]
+    },
+    {
+      "kind": "governs",
+      "from": "route:agent-rules",
+      "to": "place:.doctrine",
+      "matches": 2,
+      "matched_files": [
+        ".doctrine/.gitignore",
+        ".doctrine/doctrine.toml"
+      ]
     },
     {
       "kind": "governs",
       "from": "route:secrets",
-      "to": "place:.env.example"
+      "to": "place:.env.example",
+      "matches": 1,
+      "matched_files": [
+        ".env.example"
+      ]
     },
     {
       "kind": "governs",
       "from": "route:ci",
-      "to": "place:.github"
+      "to": "place:.github",
+      "matches": 1,
+      "matched_files": [
+        ".github/workflows/ci.yml"
+      ]
     },
     {
       "kind": "governs",
       "from": "route:ci",
-      "to": "place:.github/workflows"
+      "to": "place:.github/workflows",
+      "matches": 1,
+      "matched_files": [
+        ".github/workflows/ci.yml"
+      ]
     },
     {
       "kind": "governs",
       "from": "route:agent-rules",
-      "to": "place:AGENTS.md"
+      "to": "place:AGENTS.md",
+      "matches": 1,
+      "matched_files": [
+        "AGENTS.md"
+      ]
     },
     {
       "kind": "governs",
       "from": "route:agent-rules",
-      "to": "place:CLAUDE.md"
+      "to": "place:CLAUDE.md",
+      "matches": 1,
+      "matched_files": [
+        "CLAUDE.md"
+      ]
     },
     {
       "kind": "governs",
       "from": "route:docs",
-      "to": "place:README.md"
+      "to": "place:README.md",
+      "matches": 1,
+      "matched_files": [
+        "README.md"
+      ]
     },
     {
       "kind": "governs",
       "from": "route:migrations",
-      "to": "place:db"
+      "to": "place:db",
+      "matches": 2,
+      "matched_files": [
+        "db/migrations/001_create_orders.sql",
+        "db/migrations/002_add_order_status.sql"
+      ]
     },
     {
       "kind": "governs",
       "from": "route:migrations",
-      "to": "place:db/migrations"
+      "to": "place:db/migrations",
+      "matches": 2,
+      "matched_files": [
+        "db/migrations/001_create_orders.sql",
+        "db/migrations/002_add_order_status.sql"
+      ]
     },
     {
       "kind": "governs",
       "from": "route:docs",
-      "to": "place:docs"
+      "to": "place:docs",
+      "matches": 2,
+      "matched_files": [
+        "docs/architecture.md",
+        "docs/repository_layout.json"
+      ]
+    },
+    {
+      "kind": "governs",
+      "from": "route:field-notes",
+      "to": "place:field-notes",
+      "matches": 1,
+      "matched_files": [
+        "field-notes/visits/visit-01.md"
+      ]
+    },
+    {
+      "kind": "governs",
+      "from": "route:field-notes",
+      "to": "place:field-notes/visits",
+      "matches": 1,
+      "matched_files": [
+        "field-notes/visits/visit-01.md"
+      ]
     },
     {
       "kind": "governs",
       "from": "route:infrastructure",
-      "to": "place:infra"
+      "to": "place:infra",
+      "matches": 1,
+      "matched_files": [
+        "infra/main.tf"
+      ]
     },
     {
       "kind": "governs",
       "from": "route:dependencies",
-      "to": "place:package.json"
+      "to": "place:package.json",
+      "matches": 1,
+      "matched_files": [
+        "package.json"
+      ]
     },
     {
       "kind": "governs",
       "from": "route:tests",
-      "to": "place:tests"
+      "to": "place:tests",
+      "matches": 1,
+      "matched_files": [
+        "tests/orders.test.js"
+      ]
     }
   ],
   "gaps": [
@@ -2120,9 +2421,9 @@
       "prose": 5
     },
     "enforced_beyond_words": 2,
-    "files_total": 24,
-    "files_governed": 21,
-    "routes_live": 8,
+    "files_total": 27,
+    "files_governed": 23,
+    "routes_live": 9,
     "routes_dead": 0
   }
 }

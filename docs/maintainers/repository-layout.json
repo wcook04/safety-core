@@ -1,0 +1,110 @@
+{
+  "schema": "repository_layout@2",
+  "root_files": [
+    ".gitignore",
+    "AGENTS.md",
+    "CLAUDE.md",
+    "CONTRIBUTING.md",
+    "LICENSE",
+    "Makefile",
+    "README.md",
+    "SECURITY.md",
+    "doctrine.py",
+    "doctrine.toml",
+    "hooks.py",
+    "safety.py"
+  ],
+  "directories": {
+    ".claude": {
+      "purpose": "Claude configuration and generated skill mirrors"
+    },
+    ".claude-plugin": {
+      "purpose": "Claude plugin metadata"
+    },
+    ".doctrine": {
+      "purpose": "doctrine state and compatibility resources"
+    },
+    ".github": {
+      "purpose": "CI workflows and contributor templates"
+    },
+    "docs": {
+      "purpose": "authored documentation, checked indexes and publication records",
+      "suffixes": [
+        ".md",
+        ".json",
+        ".jsonl",
+        ".pdf",
+        ".tex",
+        ".png",
+        ".jpg",
+        ".svg",
+        ".yaml"
+      ],
+      "guide": "docs/guides/map.md"
+    },
+    "examples": {
+      "purpose": "runnable and synthetic examples"
+    },
+    "hooks": {
+      "purpose": "plugin hook configuration"
+    },
+    "skills": {
+      "purpose": "self-contained agent workflows and their executable helpers"
+    },
+    "sources": {
+      "purpose": "attributed reference material and its import tools"
+    },
+    "tests": {
+      "purpose": "behavior and integration tests",
+      "suffixes": [
+        ".py"
+      ]
+    },
+    "scripts": {
+      "purpose": "developer maintenance commands and their fixtures",
+      "suffixes": [
+        ".py",
+        ".js",
+        ".mjs",
+        ".sh",
+        ".md"
+      ]
+    },
+    "viewer": {
+      "purpose": "self-contained map viewer source",
+      "suffixes": [
+        ".html"
+      ]
+    },
+    "skills/repository-organization": {
+      "purpose": "Workflow and portable checks for extending each project\u2019s own folder organisation",
+      "guide": "skills/repository-organization/SKILL.md"
+    }
+  },
+  "exceptions": {},
+  "required_files": [
+    "README.md",
+    "AGENTS.md",
+    "docs/maintainers/repository-layout.json",
+    "skills/repository-organization/SKILL.md",
+    "skills/repository-organization/scripts/check_layout.py",
+    "skills/repository-organization/scripts/test_check_layout.py",
+    ".github/workflows/repository-layout.yml",
+    "viewer/map.html",
+    "scripts/check_repository_structure.py"
+  ],
+  "content_routes": {
+    "AGENTS.md": [
+      "skills/repository-organization/SKILL.md"
+    ],
+    "README.md": [
+      "docs/maintainers/repository-layout.json",
+      "python3 skills/repository-organization/scripts/check_layout.py --config docs/maintainers/repository-layout.json"
+    ],
+    ".github/workflows/repository-layout.yml": [
+      "python3 skills/repository-organization/scripts/check_layout.py --config docs/maintainers/repository-layout.json",
+      "python3 skills/repository-organization/scripts/test_check_layout.py"
+    ]
+  },
+  "undeclared_directories": "warn"
+}

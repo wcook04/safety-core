@@ -2,9 +2,26 @@
 
 **An editable rulebook and practical checks for your own coding-agent setup.**
 
+[Plectis website](https://wcook04.github.io/plectis/) ·
+[Get started](#what-happens-after-cloning) · [Documentation](docs/README.md) ·
+[Agent skill](skills/safety-core/SKILL.md) · [Architecture](docs/maintainers/design.md) ·
+[Video plans](#videos-and-related-projects)
+
 Improved with public feedback from **Skitter** (secret-read approval and home/root
 reasons) and **glue72desk** (a prohibitions pass can omit a requested issue).
 [Contribution details and source reports](CONTRIBUTING.md#feedback-contributions).
+
+<a href="docs/guides/map.md">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/img/map-20261015-dark.png">
+    <img src="docs/img/map-20261015-light.png" alt="Safety Core traces the evidence principle through the field-notes route to a nested folder; the inspector shows its declared purpose and linked workflow." width="1440">
+  </picture>
+</a>
+
+*Synthetic demo, captured 15 October 2026 using the viewer’s native zoom. The blue
+path links the evidence principle to `field-notes/visits/`; its purpose and linked
+skill appear in the inspector. This shows configured guidance, not proof that an
+agent executed it.*
 
 Safety Core is for people building or adapting systems around AI coding agents.
 You choose the principles, connect them to places in your repository, and inspect
@@ -16,16 +33,8 @@ It adapts selected ideas from [Anthropic's Claude Constitution](https://www.anth
 to repository work. You can revise that starting point for your project. It does
 not train a model or implement the complete Constitution.
 
-<a href="docs/guides/map.md">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/img/map-20261013-dark.png">
-    <img src="docs/img/map-20261013-light.png" alt="Safety Core maps axioms to principles, rules and repository files, separating configured checks from reminders and written guidance." width="1440">
-  </picture>
-</a>
-
-*The included example, captured 13 October 2026. It has two configuration checks
-and no runtime hooks wired. Reminders and advice are shown separately from enforced
-coverage; this is a configuration map, not live agent activity.*
+Claude Code runs the runtime hooks. Codex and other agents can read the generated
+instructions; that does not make them run those hooks.
 
 ## What happens after cloning?
 
@@ -152,13 +161,20 @@ detection. See [hook details and limits](docs/maintainers/hooks.md).
 | [tests/](tests/) | Checks for setup, generation, hooks and reported coverage. |
 | [sources/](sources/) | Attributed source excerpts and their local mappings. |
 | [docs/](docs/README.md) | `guides/` for adoption, `reference/` for formats and foundations, `maintainers/` for design and hooks. |
-| [scripts/](scripts/) | Repository checks; the installed command and runtime hooks remain at the root. |
+| [scripts/](scripts/) | Repository checks, map review fixtures and viewer regressions. |
+| [skills/repository-organization/](skills/repository-organization/) | Project folder roles and staged-content checks. |
 
 ## Videos and related projects
 
-**Safety Core walkthrough:** not yet published. The [project films](https://wcook04.github.io/plectis/#videos) show the separate research programme and its working environment.
+| Film | Status | What it introduces |
+|---|---|---|
+| [Introduction](https://wcook04.github.io/plectis/#film-introduction) | Coming soon | The wider Plectis project and its tools for inspecting agent work. |
+| [Safety Core walkthrough](https://wcook04.github.io/plectis/#film-safety-core) | Coming soon | Following a rule to files, reading its configured checks and changing a hook mode. |
 
-- [Plectis toolkit](https://github.com/wcook04/plectis): 88 Python components and examples; [explore the component map](https://wcook04.github.io/plectis/docs/system-map.html).
+These are reserved sections on the project website. The films are being prepared;
+no video is published at these links yet.
+
+- [Plectis toolkit](https://github.com/wcook04/plectis): Python components and examples; [explore the component map](https://wcook04.github.io/plectis/docs/system-map.html).
 - [Plectis Erdős](https://github.com/wcook04/plectis-erdos): papers, proofs and open questions; [read the research](https://wcook04.github.io/plectis/maths/).
 - [Plectis Atlas](https://github.com/wcook04/plectis-atlas): an independent [reader for OpenAI's mathematics release](https://wcook04.github.io/plectis-atlas/).
 
@@ -184,11 +200,32 @@ not currently a Spec Kit extension.
 - [Design](docs/maintainers/design.md), [map guide](docs/guides/map.md), [graph format](docs/reference/graph-schema.md)
 - Tests: `python3 -m unittest discover -s tests`
 - Repository placement: `python3 scripts/check_repository_structure.py` (also runs in CI)
+- `make check` also runs viewer checks with Node.js and its built-in modules.
 
-Safety Core also supports Claude Code plugin installation with a `safety-core`
-skill. Use either plugin hooks or per-project hooks to avoid duplicate execution.
+The [bundled `safety-core` skill](skills/safety-core/SKILL.md) routes Claude Code
+plugin users to the [agent setup guide](docs/guides/agent-setup.md). Use either plugin hooks or per-project hooks to avoid duplicate execution.
 The older `doctrine.py` command and `.doctrine/` filenames remain compatible.
 
 Code: [MIT](LICENSE). The Constitution is CC0; other source references and reuse
 notes are recorded in the rulebook. Safety Core is not affiliated with or endorsed
 by Anthropic, OpenAI or the upstream projects cited here.
+
+## Maintaining the tree
+
+The [directory role policy](docs/maintainers/repository-layout.json) preserves root interfaces,
+source homes and documented compatibility exceptions. The
+[organisation skill](skills/repository-organization/SKILL.md) explains changes;
+CI checks placements and required agent/validation routes. From the repository root:
+
+```sh
+python3 skills/repository-organization/scripts/check_layout.py --config docs/maintainers/repository-layout.json
+python3 skills/repository-organization/scripts/test_check_layout.py
+```
+
+After staging owned changes, add `--index` to the first command to check the staged
+policy and staged route contents. Ignored build outputs are outside this inventory.
+
+Custom folders are welcome: declare their purpose in `docs/maintainers/repository-layout.json`.
+Undeclared folders produce a warning; declared placement rules still apply.
+See the [organisation workflow](skills/repository-organization/SKILL.md) for adding
+folders and generalising useful local lessons.

@@ -530,6 +530,7 @@ on = ["edit", "shell"]
 
 [[route]]
 id = "docs"
+skills = [{ path = "skills/repository-organization/SKILL.md", when = "Adding folders, declaring purposes, moving files or generalising a local organisation lesson" }]
 paths = ["README*", "docs/**"]
 principles = ["P8"]
 reminder = "Documentation here is read as fact. It describes what exists now and labels plans as plans."
