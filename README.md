@@ -13,15 +13,14 @@ reasons) and **glue72desk** (a prohibitions pass can omit a requested issue).
 
 <a href="docs/guides/map.md">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/img/map-20261015-dark.png">
-    <img src="docs/img/map-20261015-light.png" alt="Safety Core traces the evidence principle through the field-notes route to a nested folder; the inspector shows its declared purpose and linked workflow." width="1440">
+    <source media="(prefers-color-scheme: dark)" srcset="docs/img/overview-20261015-dark.png">
+    <img src="docs/img/overview-20261015-light.png" alt="Safety Core overview: seven axioms, fifteen principles, their routes and repository folders, with all connections shown." width="1440">
   </picture>
 </a>
 
-*Synthetic demo, captured 15 October 2026 using the viewer’s native zoom. The blue
-path links the evidence principle to `field-notes/visits/`; its purpose and linked
-skill appear in the inspector. This shows configured guidance, not proof that an
-agent executed it.*
+*Synthetic demo, captured 15 October 2026. The full overview shows seven axioms,
+fifteen principles and their routes to repository files. It shows configured
+guidance and checks; execution is not assessed.*
 
 Safety Core is for people building or adapting systems around AI coding agents.
 You choose the principles, connect them to places in your repository, and inspect

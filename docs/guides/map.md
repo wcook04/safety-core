@@ -151,6 +151,11 @@ repository-organization skill. Open it with `#route=field-notes`, select the
 `visits` folder, and use one native zoom step to reproduce the desktop view above
 at 1440 by 1000. The light and dark variants use the viewer’s existing themes.
 
+The README opens with the same fixture’s full overview at 1440 by 1000. Use
+**Clear**, **Show all connections**, then **Fit** to include all seven axioms,
+fifteen principles and repository places. The route and purpose view above is a
+closer look at one connection. Both views show configuration, not agent execution.
+
 The phone view uses the same fixture at 390 by 844:
 
 <picture>
