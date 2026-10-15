@@ -275,6 +275,8 @@ class PostTool(HookCase):
         requested_operation = self.pre("Bash", command="git push --force-with-lease origin main")
         self.assertEqual(self.decision(requested_operation), "ask")
         self.assertIn("force", self.reason(requested_operation).lower())
+        unrecognized_operation = self.pre("Bash", command="team-deploy --environment staging")
+        self.assertIsNone(unrecognized_operation, "no hook decision is not permission to execute")
 
     def test_session_record_never_dirties_the_tree(self):
         self.ran("pytest")

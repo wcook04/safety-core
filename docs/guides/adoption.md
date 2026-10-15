@@ -136,8 +136,11 @@ or “lure”, and the reminder is not an authorization decision. If an agent th
 attempts `git push --force-with-lease origin main`, the separate `PreToolUse`
 guard asks about that command. The guard sees the proposed command, not the
 source of the agent's intent, so a host prompt alone does not prove that the
-person requested it. A different tool or unrecognized command may have no guard.
-No command in this example is executed or published.
+person requested it. The synthetic `team-deploy --environment staging` event
+gets no Safety Core permission decision. That absence is not an `allow` decision
+or evidence of execution; the agent still needs the person's authority and the
+host may enforce its own permissions. No command in this example is executed or
+published.
 
 Run the focused synthetic event control from this clone:
 
@@ -145,7 +148,8 @@ Run the focused synthetic event control from this clone:
 python3 -m unittest discover -s tests -p test_hooks_events.py -k quoted_mention_and_instruction_lure
 ```
 
-It checks the two fetched-text reminders and the force-push ask. It does not
+It checks the two fetched-text reminders, the force-push ask, and the absence of
+a Safety Core decision for the synthetic unrecognized command. It does not
 test an LLM's interpretation, a real agent host's permission flow, or arbitrary
 prompt-injection resistance.
 
