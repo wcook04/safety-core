@@ -110,6 +110,16 @@ class Check(RepoTestCase):
         self.assertEqual(code, 2)
         self.assertIn("axiom A1 has no anti-axiom", err)
 
+    def test_constructed_non_string_route_paths_fail_validation(self):
+        for paths in ("[42]", "42", "[true]", "true", '["tests/**", 42]', '{ pattern = "tests/**" }'):
+            with self.subTest(paths=paths):
+                doctrine_text = MINI.replace('paths = ["tests/**"]', f"paths = {paths}")
+                root = self.make_repo(DEMO_FILES, doctrine_text=doctrine_text)
+                code, _, err = self.run_cli(root, "check")
+                self.assertEqual(code, 2, err)
+                self.assertIn("route tests: paths must be strings", err)
+                self.assertNotIn("Traceback", err)
+
 
 if __name__ == "__main__":
     unittest.main()
