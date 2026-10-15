@@ -5,7 +5,7 @@
 [Plectis website](https://wcook04.github.io/plectis/) ·
 [Get started](#what-happens-after-cloning) · [Documentation](docs/README.md) ·
 [Agent skill](skills/safety-core/SKILL.md) · [Architecture](docs/maintainers/design.md) ·
-[Video plans](#videos-and-related-projects)
+[Videos](#videos-and-related-projects)
 
 The website is agent-readable through its [navigation guide](https://wcook04.github.io/plectis/llms.txt).
 For this repository's map, the [graph schema](docs/reference/graph-schema.md) and
@@ -172,11 +172,10 @@ detection. See [hook details and limits](docs/maintainers/hooks.md).
 
 | Film | Status | What it introduces |
 |---|---|---|
-| [Introduction](https://wcook04.github.io/plectis/#film-introduction) | Coming soon | The wider Plectis project and its tools for inspecting agent work. |
-| [Safety Core walkthrough](https://wcook04.github.io/plectis/#film-safety-core) | Coming soon | Following a rule to files, reading its configured checks and changing a hook mode. |
+| [Introduction](https://www.youtube.com/watch?v=uO2lbstEH9M) | Public | The wider Plectis project and its tools for inspecting agent work. |
+| [Safety Core walkthrough](https://www.youtube.com/watch?v=CY4A1aEPCGc) | Public | Following a rule to files, reading its configured checks and changing a hook mode. |
 
-These are reserved sections on the project website. The films are being prepared;
-no video is published at these links yet.
+Both films are public on YouTube.
 
 ### Where Safety Core fits
 
