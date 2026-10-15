@@ -42,5 +42,33 @@
     "docs/img/map-phone-20261015-dark.png": "841ca29999d0d3d00d29fd88a2a32835e49cf02ef6877c42a57d7f30c9532bad",
     "docs/img/map-phone-20261015-light.png": "e896f21c9eb311a33ef22729456ce7ce7a81b9af9714255423ccf8fa8b541129"
   },
-  "boundary": "Configured guidance and mechanisms, not proof of host execution."
+  "boundary": "Configured guidance and mechanisms, not proof of host execution.",
+  "overview_capture": {
+    "source_public_main_commit": "a31b3e16d6948d441ede16e0f7c193b8779d6067",
+    "source_components": {
+      "viewer/map.html": "5505fe138b67a8b593540c6bb89ad5969dad7453fd226c10dde6928f6b1b916f",
+      "doctrine.py": "0fa3908c9dd90ae6ebdfeade28960a3de0d5e622b21d6bdb6292bbb5c0b930ee",
+      "scripts/build_map_examples.py": "1327d5e5036135386132eb683556146448badd393cf386584ef9699a8a060802"
+    },
+    "fixture": "purposes: the same synthetic demo and directory-purpose fixture as the route capture",
+    "graph_sha256": "0922f265bd65f82edf0eabafc1e9ba89040c90e677ea2d02488ad0c1300366e5",
+    "native_controls": [
+      "Clear",
+      "Show all connections",
+      "Fit"
+    ],
+    "viewport": [
+      1440,
+      1000
+    ],
+    "device_scale_factor": 2,
+    "scope": "Whole map: all seven axioms, fifteen principles and twenty-one repository places; no selected route",
+    "inspection": "Native pixels and actual image display at838px README content width reviewed in light and dark.",
+    "all_principles_and_places_inside_map": true,
+    "artifacts": {
+      "docs/img/overview-20261015-light.png": "1da99977a836e43bdbf69e0becc6e19598b82911b85f4e969b55c705e22e65f4",
+      "docs/img/overview-20261015-dark.png": "f773813526d9f097ee0d591366122ba7d3355c682138256f9f038da786ca8078"
+    },
+    "boundary": "Configured guidance and mechanisms, not proof of agent execution"
+  }
 }
