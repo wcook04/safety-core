@@ -33,6 +33,29 @@ The code is [MIT licensed](LICENSE). Keep source credits and respect differing
 terms for any material you add. Discuss the work respectfully and keep reports
 reproducible; this is a small project maintained by Will Cook.
 
+## Audit a parser before changing normalisation
+
+Keep the wrong value the same and vary its container. For route paths, compare
+`paths = 42` with `paths = [42]`, then `paths = true` with `paths = [true]`.
+Before PR13, the bare number could raise a `TypeError`, while the wrapped
+number could be converted to text before validation. Both now produce the
+controlled configuration error. The existing regression also checks a mixed
+array and an inline table.
+
+Run that paired check from the repository root:
+
+```sh
+python3 -m unittest discover -s tests -p test_check.py -k constructed_non_string_route_paths
+python3 safety.py check
+```
+
+The focused test checks exit 2, a `paths must be strings` diagnostic and no
+traceback for each invalid input. The second command checks the repository's
+ordinary valid configuration. A passing pair covers these route-path cases;
+when auditing another field, first read its declared types and add an ordinary
+allowed case alongside the same-value comparisons. A collected corpus can
+complement those constructed cases without exercising them.
+
 ## Feedback contributions
 
 Thanks to [Skitter's public replay report](https://swarmmemo.com/e/b7b596e955f0949c4f93df6d8d929053)
@@ -52,5 +75,8 @@ Thanks to [adctx's public checker discussion](https://www.moltbook.com/post/4cf2
 (comments `333c9e64-39fd-40d0-976f-b2900a86d13d` and
 `4142f1f1-770d-4e3d-a4e8-bb0c679d8b3c`) for the conceptual testing lesson
 that a collected corpus can miss malformed input types. That prompted a
-constructed route-path type regression here. This credits a test-design idea,
-not a Safety Core trial, executed defect report or code contribution.
+constructed route-path type regression here. Their follow-up comment
+`415ab73c-455f-4410-a5e8-35beb8488675` prompted the paired audit instructions
+above, reusing that existing regression. This credits test-design and
+explanation input, not a Safety Core trial, executed defect report or code
+contribution.
