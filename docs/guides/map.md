@@ -4,7 +4,13 @@ The map shows your doctrine and your repository in one picture. You can use it t
 which rules reach which parts of the code, how strongly each rule holds, and where the
 gaps are.
 
-![The map at 1440 by 900, light theme](../img/map-1440x900-light.png)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="../img/map-20261013-dark.png">
+  <img src="../img/map-20261013-light.png" alt="The example rule map connects axioms, principles, routes and files; it reports two configured checks and keeps reminders separate." width="1440">
+</picture>
+
+*The included example, captured 13 October 2026. It has no runtime hooks wired;
+the two checks report recognized repository configuration.*
 
 ## Opening it
 
@@ -36,7 +42,7 @@ across the whole repository.
 ## How strongly a rule holds
 
 Five cells beside each principle work as a gauge. The more cells are filled, the
-stronger the mechanism that exists for the rule:
+stronger the configured mechanism recognized for the rule:
 
 | Cells | Level | Meaning |
 |---|---|---|
@@ -47,7 +53,8 @@ stronger the mechanism that exists for the rule:
 | 1 | advise | A note to the person at the end of a turn. |
 | 0 | prose | Written down only. The gauge is empty and the row says "only words". |
 
-The gauge shows the level that actually exists, not the level the doctrine declares. If
+The gauge shows the support recognized in the repository configuration. It does not
+show whether an agent host executed a hook. If
 the doctrine declares more than exists, the missing cells are drawn as dashed outlines
 and the row says, for example, "declared ask". The level reads from the shape and the
 fill alone, so colour is never needed to tell levels apart.
@@ -86,7 +93,7 @@ card against its budget, and the number of gaps.
   - A place lists what an agent working there receives: the entry card, then each
     route's reminder and principles, then the principles that apply everywhere.
 - **Only what is enforced** fades every principle that is words, reminders or advice, so
-  you see what actually holds.
+  you can inspect the configured blocking, approval and check mechanisms.
 - **Stand here** asks for a place and lets everything not delivered there recede.
   Principles that reach it only as an entry-card line stay half visible.
 - **Zoom** with the buttons, by pinching on a trackpad, or with ctrl or cmd and the scroll wheel.

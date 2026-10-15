@@ -2,19 +2,14 @@
 
 **An editable rulebook and practical checks for your own coding-agent setup.**
 
+[Plectis website](https://wcook04.github.io/plectis/) ·
+[Get started](#what-happens-after-cloning) · [Documentation](docs/README.md) ·
+[Agent skill](skills/safety-core/SKILL.md) · [Architecture](docs/maintainers/design.md) ·
+[Video plans](#videos-and-related-projects)
+
 Improved with public feedback from **Skitter** (secret-read approval and home/root
 reasons) and **glue72desk** (a prohibitions pass can omit a requested issue).
 [Contribution details and source reports](CONTRIBUTING.md#feedback-contributions).
-
-Safety Core is for people building or adapting systems around AI coding agents.
-You choose the principles, connect them to places in your repository, and inspect
-which ones are instructions, reminders or executable checks. The starting rules
-cover ordinary concerns: keep people in control, do useful work without constant
-permission prompts, preserve tests, keep secrets out, and report results honestly.
-
-It adapts selected ideas from [Anthropic's Claude Constitution](https://www.anthropic.com/constitution)
-to repository work. You can revise that starting point for your project. It does
-not train a model or implement the complete Constitution.
 
 <a href="docs/guides/map.md">
   <picture>
@@ -26,6 +21,19 @@ not train a model or implement the complete Constitution.
 *The included example, captured 13 October 2026. It has two configuration checks
 and no runtime hooks wired. Reminders and advice are shown separately from enforced
 coverage; this is a configuration map, not live agent activity.*
+
+Safety Core is for people building or adapting systems around AI coding agents.
+You choose the principles, connect them to places in your repository, and inspect
+which ones are instructions, reminders or executable checks. The starting rules
+cover ordinary concerns: keep people in control, do useful work without constant
+permission prompts, preserve tests, keep secrets out, and report results honestly.
+
+It adapts selected ideas from [Anthropic's Claude Constitution](https://www.anthropic.com/constitution)
+to repository work. You can revise that starting point for your project. It does
+not train a model or implement the complete Constitution.
+
+Claude Code runs the runtime hooks. Codex and other agents can read the generated
+instructions; that does not make them run those hooks.
 
 ## What happens after cloning?
 
@@ -156,9 +164,15 @@ detection. See [hook details and limits](docs/maintainers/hooks.md).
 
 ## Videos and related projects
 
-**Safety Core walkthrough:** not yet published. The [project films](https://wcook04.github.io/plectis/#videos) show the separate research programme and its working environment.
+| Film | Status | What it introduces |
+|---|---|---|
+| [Introduction](https://wcook04.github.io/plectis/#film-introduction) | Coming soon | The wider Plectis project and its tools for inspecting agent work. |
+| [Safety Core walkthrough](https://wcook04.github.io/plectis/#film-safety-core) | Coming soon | Following a rule to files, reading its configured checks and changing a hook mode. |
 
-- [Plectis toolkit](https://github.com/wcook04/plectis): 88 Python components and examples; [explore the component map](https://wcook04.github.io/plectis/docs/system-map.html).
+These are reserved sections on the project website. The films are being prepared;
+no video is published at these links yet.
+
+- [Plectis toolkit](https://github.com/wcook04/plectis): Python components and examples; [explore the component map](https://wcook04.github.io/plectis/docs/system-map.html).
 - [Plectis Erdős](https://github.com/wcook04/plectis-erdos): papers, proofs and open questions; [read the research](https://wcook04.github.io/plectis/maths/).
 - [Plectis Atlas](https://github.com/wcook04/plectis-atlas): an independent [reader for OpenAI's mathematics release](https://wcook04.github.io/plectis-atlas/).
 
@@ -185,8 +199,8 @@ not currently a Spec Kit extension.
 - Tests: `python3 -m unittest discover -s tests`
 - Repository placement: `python3 scripts/check_repository_structure.py` (also runs in CI)
 
-Safety Core also supports Claude Code plugin installation with a `safety-core`
-skill. Use either plugin hooks or per-project hooks to avoid duplicate execution.
+The [bundled `safety-core` skill](skills/safety-core/SKILL.md) routes Claude Code
+plugin users to the [agent setup guide](docs/guides/agent-setup.md). Use either plugin hooks or per-project hooks to avoid duplicate execution.
 The older `doctrine.py` command and `.doctrine/` filenames remain compatible.
 
 Code: [MIT](LICENSE). The Constitution is CC0; other source references and reuse
