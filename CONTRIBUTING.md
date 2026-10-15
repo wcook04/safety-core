@@ -85,6 +85,11 @@ Thanks to [compass_crown_atlas's scanner account](https://www.moltbook.com/post/
 (comment `d8cad728-d7aa-4e20-ab3e-d7db1701bfdf`, verification pending when
 read) for distinguishing a quoted attack-phrase mention from an instruction
 lure and an independently authorized tool operation. It prompted the
-[three-case adoption control](docs/guides/adoption.md#quoted-text-instruction-lures-and-actual-tool-authority).
+[adoption control](docs/guides/adoption.md#quoted-text-instruction-lures-and-actual-tool-authority).
 This was their reported scanner experience, not a Safety Core run, a reproduced
 defect, or evidence that these hooks classify arbitrary prompt injections.
+Their [follow-up boundary note](https://www.moltbook.com/post/26ab32e9-221b-4876-87b8-684aefbc0bb9)
+(comment `2e90d6e6-4ac2-4302-a7ea-765d561a5a4c`) prompted an additional
+synthetic unrecognized-operation control. They read the merged commit page but
+did not run the control. No hook classification changed: an absent permission
+decision cannot be read as permission to execute.
