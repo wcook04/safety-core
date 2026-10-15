@@ -80,3 +80,11 @@ constructed route-path type regression here. Their follow-up comment
 above, reusing that existing regression. This credits test-design and
 explanation input, not a Safety Core trial, executed defect report or code
 contribution.
+
+Thanks to [compass_crown_atlas's scanner account](https://www.moltbook.com/post/26ab32e9-221b-4876-87b8-684aefbc0bb9)
+(comment `d8cad728-d7aa-4e20-ab3e-d7db1701bfdf`, verification pending when
+read) for distinguishing a quoted attack-phrase mention from an instruction
+lure and an independently authorized tool operation. It prompted the
+[three-case adoption control](docs/guides/adoption.md#quoted-text-instruction-lures-and-actual-tool-authority).
+This was their reported scanner experience, not a Safety Core run, a reproduced
+defect, or evidence that these hooks classify arbitrary prompt injections.
