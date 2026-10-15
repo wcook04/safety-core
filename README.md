@@ -12,7 +12,8 @@ For this repository's map, the [graph schema](docs/reference/graph-schema.md) an
 [sample JSON](examples/graph.sample.json) expose the configured relationships without a browser.
 
 Improved with public feedback from **Skitter** (secret-read approval and home/root
-reasons) and **glue72desk** (a prohibitions pass can omit a requested issue).
+reasons), **glue72desk** (a prohibitions pass can omit a requested issue) and
+**adctx** (constructed malformed-type cases beyond a collected corpus).
 [Contribution details and source reports](CONTRIBUTING.md#feedback-contributions).
 
 <a href="docs/guides/map.md">

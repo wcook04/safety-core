@@ -214,6 +214,16 @@ def from_dict(raw: dict, path: Path | None = None) -> Doctrine:
     def text(item: dict, key: str, default: str = "") -> str:
         return str(item.get(key, default))
 
+    def route_paths(value: object, rid: str) -> tuple[str, ...]:
+        if value is None:
+            return ()
+        if isinstance(value, str):
+            return (value,)
+        if isinstance(value, list) and all(isinstance(path, str) for path in value):
+            return tuple(value)
+        problems.append(f"route {rid}: paths must be strings")
+        return ()
+
     for sid, item in items("source", d.sources):
         d.sources[sid] = Source(id=sid, title=text(item, "title", sid), url=text(item, "url"),
                                 publisher=text(item, "publisher"), date=text(item, "date"),
@@ -241,7 +251,7 @@ def from_dict(raw: dict, path: Path | None = None) -> Doctrine:
                 problems.append(f"route {rid}: duplicate skill {skill['path']}")
             else:
                 skills.append(SkillRef(skill['path'], skill['when']))
-        d.routes[rid] = Route(id=rid, paths=_strs(item.get("paths")), principles=_strs(item.get("principles")),
+        d.routes[rid] = Route(id=rid, paths=route_paths(item.get("paths"), rid), principles=_strs(item.get("principles")),
                               reminder=text(item, "reminder"), on=_strs(item.get("on")) or ("edit",), skills=tuple(skills))
 
     for s in d.sources.values():

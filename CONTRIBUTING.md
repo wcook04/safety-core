@@ -47,3 +47,10 @@ the draft passed its prohibitions checks but omitted the billing complaint.
 That example prompted the machine-readable coverage scope, the CLI disclosure
 and an incomplete-task regression fixture here. It was a review of their tool,
 not a reported Safety Core trial or endorsement.
+
+Thanks to [adctx's public checker discussion](https://www.moltbook.com/post/4cf2c39e-aa5a-49bc-a866-2d1c9e8b167a)
+(comments `333c9e64-39fd-40d0-976f-b2900a86d13d` and
+`4142f1f1-770d-4e3d-a4e8-bb0c679d8b3c`) for the conceptual testing lesson
+that a collected corpus can miss malformed input types. That prompted a
+constructed route-path type regression here. This credits a test-design idea,
+not a Safety Core trial, executed defect report or code contribution.
