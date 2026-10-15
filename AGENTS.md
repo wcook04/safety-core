@@ -51,3 +51,15 @@ Each route's reminder and principles are in `.claude/rules/doctrine-<route>.md`.
 ## Repository organisation
 
 Use `docs/README.md` and `docs/maintainers/design.md` to place changes. Keep the runtime core at the root, the viewer in `viewer/`, maintenance tools in `scripts/` and regressions in `tests/`. Run `python3 scripts/check_repository_structure.py` and `python3 -m unittest discover -s tests` after structural changes. Update callers and links while preserving the installed `.doctrine/` layout. This guidance is local to the Safety Core source repository; it is outside the generated doctrine region and is not copied into adopted repositories.
+
+For tree changes, new file families or file placement, read
+[repository-organization](skills/repository-organization/SKILL.md) and the
+[local directory roles](docs/maintainers/repository-layout.json). Preserve source owners and
+public interfaces; run the layout gate on the worktree and on staged contents.
+
+For map captures, inspect the relevant local viewer branches and worktrees before
+selecting a source. A clean main checkout or a cached image date does not prove
+that it contains the latest approved UI. Render fresh from the selected source;
+record component hashes, fixture, native view state and viewport in
+`docs/maintainers/map-captures.json`, then inspect the actual image at delivery
+and README sizes before replacing it.

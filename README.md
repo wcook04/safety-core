@@ -13,14 +13,15 @@ reasons) and **glue72desk** (a prohibitions pass can omit a requested issue).
 
 <a href="docs/guides/map.md">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/img/map-20261013-dark.png">
-    <img src="docs/img/map-20261013-light.png" alt="Safety Core maps axioms to principles, rules and repository files, separating configured checks from reminders and written guidance." width="1440">
+    <source media="(prefers-color-scheme: dark)" srcset="docs/img/map-20261015-dark.png">
+    <img src="docs/img/map-20261015-light.png" alt="Safety Core traces the evidence principle through the field-notes route to a nested folder; the inspector shows its declared purpose and linked workflow." width="1440">
   </picture>
 </a>
 
-*The included example, captured 13 October 2026. It has two configuration checks
-and no runtime hooks wired. Reminders and advice are shown separately from enforced
-coverage; this is a configuration map, not live agent activity.*
+*Synthetic demo, captured 15 October 2026 using the viewer’s native zoom. The blue
+path links the evidence principle to `field-notes/visits/`; its purpose and linked
+skill appear in the inspector. This shows configured guidance, not proof that an
+agent executed it.*
 
 Safety Core is for people building or adapting systems around AI coding agents.
 You choose the principles, connect them to places in your repository, and inspect
@@ -160,7 +161,8 @@ detection. See [hook details and limits](docs/maintainers/hooks.md).
 | [tests/](tests/) | Checks for setup, generation, hooks and reported coverage. |
 | [sources/](sources/) | Attributed source excerpts and their local mappings. |
 | [docs/](docs/README.md) | `guides/` for adoption, `reference/` for formats and foundations, `maintainers/` for design and hooks. |
-| [scripts/](scripts/) | Repository checks; the installed command and runtime hooks remain at the root. |
+| [scripts/](scripts/) | Repository checks, map review fixtures and viewer regressions. |
+| [skills/repository-organization/](skills/repository-organization/) | Project folder roles and staged-content checks. |
 
 ## Videos and related projects
 
@@ -198,6 +200,7 @@ not currently a Spec Kit extension.
 - [Design](docs/maintainers/design.md), [map guide](docs/guides/map.md), [graph format](docs/reference/graph-schema.md)
 - Tests: `python3 -m unittest discover -s tests`
 - Repository placement: `python3 scripts/check_repository_structure.py` (also runs in CI)
+- `make check` also runs viewer checks with Node.js and its built-in modules.
 
 The [bundled `safety-core` skill](skills/safety-core/SKILL.md) routes Claude Code
 plugin users to the [agent setup guide](docs/guides/agent-setup.md). Use either plugin hooks or per-project hooks to avoid duplicate execution.
@@ -206,3 +209,23 @@ The older `doctrine.py` command and `.doctrine/` filenames remain compatible.
 Code: [MIT](LICENSE). The Constitution is CC0; other source references and reuse
 notes are recorded in the rulebook. Safety Core is not affiliated with or endorsed
 by Anthropic, OpenAI or the upstream projects cited here.
+
+## Maintaining the tree
+
+The [directory role policy](docs/maintainers/repository-layout.json) preserves root interfaces,
+source homes and documented compatibility exceptions. The
+[organisation skill](skills/repository-organization/SKILL.md) explains changes;
+CI checks placements and required agent/validation routes. From the repository root:
+
+```sh
+python3 skills/repository-organization/scripts/check_layout.py --config docs/maintainers/repository-layout.json
+python3 skills/repository-organization/scripts/test_check_layout.py
+```
+
+After staging owned changes, add `--index` to the first command to check the staged
+policy and staged route contents. Ignored build outputs are outside this inventory.
+
+Custom folders are welcome: declare their purpose in `docs/maintainers/repository-layout.json`.
+Undeclared folders produce a warning; declared placement rules still apply.
+See the [organisation workflow](skills/repository-organization/SKILL.md) for adding
+folders and generalising useful local lessons.

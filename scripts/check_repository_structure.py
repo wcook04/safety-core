@@ -4,7 +4,8 @@ from pathlib import Path, PurePosixPath
 import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
-ROOT_FILES = {'.gitignore', 'AGENTS.md', 'CLAUDE.md', 'CONTRIBUTING.md', 'LICENSE',
+ROOT_FILES = {
+    'Makefile','.gitignore', 'AGENTS.md', 'CLAUDE.md', 'CONTRIBUTING.md', 'LICENSE',
               'README.md', 'SECURITY.md', 'doctrine.py', 'doctrine.toml', 'hooks.py', 'safety.py'}
 REQUIRED = {'doctrine.py', 'safety.py', 'hooks.py', 'doctrine.toml', 'viewer/map.html',
             'docs/guides/agent-setup.md', 'docs/README.md'}
@@ -20,6 +21,9 @@ def candidates(root: Path) -> set[str]:
 def check(paths: set[str]) -> list[str]:
     errors = [f'{p}: required source is missing' for p in sorted(REQUIRED - paths)]
     for name in sorted(paths):
+        if name == 'skills/repository-organization/scripts/test_check_layout.py':
+            continue  # Self-contained portable skill fixture runner, invoked by CI.
+
         p = PurePosixPath(name)
         if len(p.parts) == 1 and name not in ROOT_FILES:
             errors.append(f'{name}: root is for entry files, the rulebook and the small runtime core')

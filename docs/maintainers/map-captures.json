@@ -1,0 +1,46 @@
+{
+  "schema": "safety_core_map_captures_v1",
+  "captured_on": "2026-10-15",
+  "source": {
+    "upgraded_viewer_commit": "89d1604aef477e23550c005f11ec52eee6970f96",
+    "retained_main_commit": "670790d",
+    "components": {
+      "viewer/map.html": "5505fe138b67a8b593540c6bb89ad5969dad7453fd226c10dde6928f6b1b916f",
+      "doctrine.py": "0fa3908c9dd90ae6ebdfeade28960a3de0d5e622b21d6bdb6292bbb5c0b930ee",
+      "scripts/build_map_examples.py": "1327d5e5036135386132eb683556146448badd393cf386584ef9699a8a060802"
+    }
+  },
+  "fixture": {
+    "builder": "scripts/build_map_examples.py",
+    "name": "purposes",
+    "description": "Included demo extended by the owner builder with synthetic field-notes/visits, directory purposes and one routed skill. No runtime hooks are wired.",
+    "graph_sha256": "2136e3ff19c736a392432ebaa23a32e4e7c690eb1fd56a95d495bccff1fc0e3e"
+  },
+  "desktop_state": {
+    "viewport": [
+      1440,
+      1000
+    ],
+    "route": "field-notes",
+    "selected_place": "field-notes/visits",
+    "native_zoom_steps": 1,
+    "scope": "Focused route view; not the entire map.",
+    "inspection": "Native light/dark pixels reviewed at delivery size and README display size."
+  },
+  "phone_state": {
+    "viewport": [
+      390,
+      844
+    ],
+    "route": "field-notes",
+    "selected_place": "field-notes/visits",
+    "scope": "Native route and place selectors replace the graph."
+  },
+  "artifacts": {
+    "docs/img/map-20261015-dark.png": "3323e46a3e27b279855c9d8de70f046ebceeca5adc520af2ccdcaf72f9fa99d1",
+    "docs/img/map-20261015-light.png": "45269b1bc248ceea4bedfda2b0420c0badb325d17592b09657fc939dece04fe6",
+    "docs/img/map-phone-20261015-dark.png": "841ca29999d0d3d00d29fd88a2a32835e49cf02ef6877c42a57d7f30c9532bad",
+    "docs/img/map-phone-20261015-light.png": "e896f21c9eb311a33ef22729456ce7ce7a81b9af9714255423ccf8fa8b541129"
+  },
+  "boundary": "Configured guidance and mechanisms, not proof of host execution."
+}
