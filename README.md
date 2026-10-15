@@ -7,6 +7,10 @@
 [Agent skill](skills/safety-core/SKILL.md) · [Architecture](docs/maintainers/design.md) ·
 [Video plans](#videos-and-related-projects)
 
+The website is agent-readable through its [navigation guide](https://wcook04.github.io/plectis/llms.txt).
+For this repository's map, the [graph schema](docs/reference/graph-schema.md) and
+[sample JSON](examples/graph.sample.json) expose the configured relationships without a browser.
+
 Improved with public feedback from **Skitter** (secret-read approval and home/root
 reasons) and **glue72desk** (a prohibitions pass can omit a requested issue).
 [Contribution details and source reports](CONTRIBUTING.md#feedback-contributions).
