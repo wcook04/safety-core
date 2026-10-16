@@ -1,10 +1,11 @@
 # Hooks
 
-`hooks.py` is one standard-library Python file that Claude Code runs on five events. It
-delivers the doctrine where the agent works, keeps a record of what actually ran, and
+`hooks.py` is one standard-library Python file. Its ordinary mode runs on five
+Claude Code events and delivers the doctrine where the agent works, keeps a record of what actually ran, and
 compares the agent's final message with that record. In a repository with no doctrine
 (`doctrine.toml` or `.doctrine/doctrine.toml` in the working directory or above it) it does
-nothing.
+nothing. The separate opt-in [push-policy handler](#optional-project-specific-push-policy)
+needs no doctrine and has stricter error behavior.
 
 ## Install
 

@@ -3,8 +3,12 @@
 
 Run as `python3 hooks.py` with the hook JSON on stdin. The event comes from `hook_event_name`
 (PreToolUse, PostToolUse, PostToolUseFailure, Stop, SessionStart) or from the first argument.
-Without a doctrine.toml above the working directory it does nothing. An internal error writes
-one line to stderr and exits 0, so a fault here never blocks the agent.
+In ordinary mode, without a doctrine.toml above the working directory it does nothing.
+An ordinary-handler error writes one line to stderr and exits 0.
+
+Opt-in `--push-policy PATH` is a separate strict PreToolUse/Bash handler: it needs
+no doctrine, reads a project-owned JSON policy and exits 2 on policy/input/internal
+errors. `--check-push-policy PATH` validates that policy without hook installation.
 
   PreToolUse          place reminders; asks before rule-file edits and irreversible commands;
                       blocks commits whose changes hold key-shaped secrets; notes hidden exit statuses
