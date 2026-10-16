@@ -228,5 +228,68 @@ class Secrets(unittest.TestCase):
             self.assertFalse(hooks.env_file(name), name)
 
 
+
+
+
+class DedicatedPushPolicyParser(unittest.TestCase):
+    policy = {"version": 1, "protected_refs": ["refs/heads/main", "refs/heads/dev"],
+              "decision": "deny", "deny_force": True}
+
+    def test_protected_destinations_and_explicit_unprotected_targets(self):
+        for command in ["git push origin HEAD:main",
+                        "git push origin refs/heads/main:refs/heads/main", "git push origin :dev",
+                        "git push --delete origin main", "git -C 'a b' push origin HEAD:refs/heads/dev",
+                        "git push origin HEAD:topic HEAD:main"]:
+            with self.subTest(command=command):
+                self.assertEqual(hooks.evaluate_push_policy(command, self.policy), "protected_ref")
+        for command in ["git status --short", "git push --no-follow-tags -u origin feature/topic:refs/heads/feature/topic",
+                        "git push --no-follow-tags origin HEAD:refs/heads/topic", "git push --no-follow-tags --delete origin topic",
+                        "git push --no-follow-tags origin :topic", "printf hello"]:
+            with self.subTest(command=command):
+                self.assertIsNone(hooks.evaluate_push_policy(command, self.policy))
+
+    def test_force_and_ambiguous_pushes_require_review(self):
+        for command in ["git push --force origin topic", "git push --force-with-lease=topic:abc origin topic",
+                        "git push origin +topic:topic"]:
+            self.assertEqual(hooks.evaluate_push_policy(command, self.policy), "force")
+        for command in ["git push", "git push origin", "git push origin HEAD", "git push origin topic",
+                        "git push origin refs/heads/topic", "git push origin main", "git push --all origin",
+                        "git push --mirror origin", "git push --unknown origin topic", "git -C push",
+                        "git -c alias.send=push send origin topic", "git send origin main",
+                        "git push origin 'refs/heads/*:refs/heads/*'", "git push origin HEAD:",
+                        "git push origin HEAD:main:extra", "git push origin HEAD~1:topic",
+                        "bash -c 'git push origin topic'", "env git push origin topic",
+                        "git status && git push origin topic", "git push origin '$target'",
+                        "git push origin topic >log", "git push origin $(name)",
+                        "git push origin topic; true", "git push origin 'unterminated"]:
+            with self.subTest(command=command):
+                self.assertEqual(hooks.evaluate_push_policy(command, self.policy), "unknown")
+
+    def test_different_namespace_policies_and_symbolic_destinations(self):
+        tag_policy = dict(self.policy, protected_refs=["refs/tags/release"])
+        for command in ["git push origin refs/tags/release:refs/tags/release",
+                        "git push origin refs/tags/release:release", "git push origin HEAD:release",
+                        "git push --delete origin release"]:
+            with self.subTest(command=command):
+                self.assertEqual(hooks.evaluate_push_policy(command, tag_policy), "protected_ref")
+        self.assertIsNone(hooks.evaluate_push_policy("git push --no-follow-tags origin refs/heads/release:refs/heads/release", tag_policy))
+        self.assertEqual(hooks.evaluate_push_policy("git push origin HEAD:main", self.policy), "protected_ref")
+        for command in ["git push origin topic:HEAD", "git push --delete origin HEAD"]:
+            self.assertEqual(hooks.evaluate_push_policy(command, tag_policy), "unknown")
+
+    def test_explicit_destination_still_requires_follow_tags_override(self):
+        tag_policy = dict(self.policy, protected_refs=["refs/tags/release"])
+        for policy in [self.policy, tag_policy]:
+            self.assertEqual(hooks.evaluate_push_policy("git push origin HEAD:refs/heads/topic", policy), "unknown")
+            self.assertIsNone(hooks.evaluate_push_policy("git push --no-follow-tags origin HEAD:refs/heads/topic", policy))
+        self.assertEqual(hooks.evaluate_push_policy("git push --no-follow-tags origin HEAD:main", self.policy), "protected_ref")
+        self.assertEqual(hooks.evaluate_push_policy("git push --no-follow-tags origin topic", self.policy), "unknown")
+
+    def test_force_switch_does_not_weaken_protected_targets(self):
+        policy = dict(self.policy, deny_force=False)
+        self.assertIsNone(hooks.evaluate_push_policy("git push --no-follow-tags -f origin topic:refs/heads/topic", policy))
+        self.assertEqual(hooks.evaluate_push_policy("git push -f origin main:refs/heads/main", policy), "protected_ref")
+
+
 if __name__ == "__main__":
     unittest.main()

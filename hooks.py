@@ -1295,6 +1295,226 @@ def handle(payload: dict, event: str = "") -> dict | None:
     return out.emit()
 
 
+# Dedicated opt-in handler: deliberately outside CHECKS/WIRING and doctrine defaults.
+PUSH_POLICY_MAX_BYTES = 65536
+PUSH_EVENT_MAX_BYTES = 1048576
+
+
+class PushPolicyError(ValueError):
+    """A fixed public error code, without policy bytes or exception details."""
+
+
+def _push_unique_object(pairs):
+    result = {}
+    for key, value in pairs:
+        if key in result:
+            raise PushPolicyError("duplicate_json_key")
+        result[key] = value
+    return result
+
+
+def _push_json(raw: bytes):
+    try:
+        return json.loads(raw.decode("utf-8"), object_pairs_hook=_push_unique_object)
+    except PushPolicyError:
+        raise
+    except (ValueError, UnicodeError, RecursionError):
+        raise PushPolicyError("invalid_json") from None
+
+
+def _push_ref(value: str) -> bool:
+    # Literal full ref subset; no revision expressions, patterns or shell expansion.
+    return (isinstance(value, str) and value.startswith("refs/")
+            and len(value) <= 1024 and not value.endswith(("/", "."))
+            and not any(c.isspace() or ord(c) < 32 or ord(c) == 127 for c in value)
+            and not any(c in value for c in "~^:?*[\\")
+            and not any(s in value for s in ("..", "@{", "//"))
+            and all(part and not part.startswith(".") and not part.endswith(".lock")
+                    for part in value.split("/")))
+
+
+def load_push_policy(path: Path) -> dict:
+    import stat
+
+    try:
+        # Nonblocking open plus a regular-file check avoids waiting on a FIFO.
+        fd = os.open(path, os.O_RDONLY | getattr(os, "O_NONBLOCK", 0))
+        with os.fdopen(fd, "rb") as fh:
+            if not stat.S_ISREG(os.fstat(fh.fileno()).st_mode):
+                raise PushPolicyError("policy_not_regular")
+            raw = fh.read(PUSH_POLICY_MAX_BYTES + 1)
+    except OSError:
+        raise PushPolicyError("policy_unreadable") from None
+    if len(raw) > PUSH_POLICY_MAX_BYTES:
+        raise PushPolicyError("policy_too_large")
+    policy = _push_json(raw)
+    keys = {"version", "protected_refs", "decision", "deny_force"}
+    if not isinstance(policy, dict) or not keys <= set(policy) or set(policy) - keys - {"deny_output"}:
+        raise PushPolicyError("policy_keys")
+    refs = policy["protected_refs"]
+    if type(policy["version"]) is not int or policy["version"] != 1:
+        raise PushPolicyError("policy_version")
+    if (not isinstance(refs, list) or not 1 <= len(refs) <= 128
+            or not all(_push_ref(r) for r in refs) or len(set(refs)) != len(refs)):
+        raise PushPolicyError("policy_refs")
+    if policy["decision"] not in ("ask", "deny") or type(policy["deny_force"]) is not bool:
+        raise PushPolicyError("policy_decision")
+    output = policy.get("deny_output", "json")
+    if output not in ("json", "exit2") or (output == "exit2" and policy["decision"] != "deny"):
+        raise PushPolicyError("policy_deny_output")
+    return dict(policy, deny_output=output)
+
+
+def evaluate_push_policy(command: str, policy: dict) -> str | None:
+    """Return protected_ref/force/unknown or None, without executing anything.
+
+    Supported grammar is a single direct `git [-C literal-dir] push`, explicit
+    literal remote and one or more literal refspecs. Only the options listed below
+    are understood. Short destinations are compared conservatively against every
+    configured namespace suffix, not resolved as a branch from repository state.
+    All non-delete source-only refspecs are unresolved: remote push configuration
+    can map them to different destinations. A short destination HEAD is unresolved.
+    Neutral pushes additionally require --no-follow-tags to override push.followTags. `--delete` destinations are literal branch names/full refs.
+    All shell operators, expansion, wrappers and unsupported options around a
+    Git-looking invocation require review. This is not arbitrary shell/alias
+    detection: opaque scripts, other tools and constructed command names are
+    outside this Bash-text guard. Known Git builtins cannot be replaced by Git
+    aliases; unknown Git subcommands are unresolved, not assumed harmless.
+    """
+    import shlex
+
+    try:
+        words = shlex.split(command, comments=False, posix=True)
+    except ValueError:
+        return "unknown"
+    if not words:
+        return None
+    git_seen = any(os.path.basename(w) == "git" for w in words)
+    # Also catches quoted shell bodies and dynamic arguments to literal git.
+    git_text = re.search(r"(?<![\w-])git(?:\s|$)", command) is not None
+    if not git_seen and not git_text:
+        return None
+    if (words[0] != "git" or any(c in command for c in "\n\r;&|<>$`(){}")
+            or any(c in command for c in "\\") or "#" in command):
+        return "unknown"
+    args = words[1:]
+    while args[:1] == ["-C"]:
+        if len(args) < 3 or not args[1] or args[1].startswith("-"):
+            return "unknown"
+        args = args[2:]
+    if not args:
+        return "unknown"
+    # These builtins are neutral to this push-only policy, not universally safe.
+    if args[0] in {"status", "diff", "log", "show", "rev-parse", "ls-files", "ls-tree",
+                   "add", "commit", "branch", "checkout", "switch", "fetch", "pull",
+                   "merge", "rebase", "reset", "clean", "tag", "worktree", "config"}:
+        return None
+    if args[0] != "push":
+        return "unknown"
+    positional, force, delete, options, no_follow_tags = [], False, False, True, False
+    neutral = {"-u", "--set-upstream", "-n", "--dry-run", "--porcelain", "-v", "--verbose", "-q", "--quiet"}
+    for word in args[1:]:
+        if options and word == "--":
+            options = False
+        elif options and word == "--no-follow-tags":
+            no_follow_tags = True
+        elif options and word in neutral:
+            continue
+        elif options and (word in {"-f", "--force", "--force-if-includes", "--force-with-lease"}
+                          or word.startswith("--force-with-lease=")):
+            force = True
+        elif options and word in {"--delete", "-d"}:
+            delete = True
+        elif options and word.startswith("-"):
+            return "unknown"
+        else:
+            positional.append(word)
+    if force and policy["deny_force"]:
+        return "force"
+    if len(positional) < 2 or not positional[0] or positional[0].startswith("-"):
+        return "unknown"
+    remote, specs = positional[0], positional[1:]
+    # A remote is a name, not a URL/path/remote-helper invocation with unknown semantics.
+    if not re.fullmatch(r"[A-Za-z0-9_][A-Za-z0-9_.-]*", remote):
+        return "unknown"
+    protected = False
+    for spec in specs:
+        if spec.startswith("+"):
+            force = True
+            spec = spec[1:]
+        if spec.count(":") > 1 or not spec:
+            return "unknown"
+        if ":" in spec:
+            source, destination = spec.split(":")
+            if delete:
+                return "unknown"
+        else:
+            source, destination = spec, spec
+            if not delete:
+                return "unknown"
+        if source and not _push_ref(source if source.startswith("refs/") else "refs/heads/" + source):
+            return "unknown"
+        if destination == "HEAD":
+            return "unknown"
+        ref = destination if destination.startswith("refs/") else "refs/heads/" + destination
+        if not _push_ref(ref):
+            return "unknown"
+        # A short destination can resolve to a tag or another namespace. We do
+        # not read local refs or remote state: protect every possible configured
+        # suffix, including full-source tag refspecs with a short destination.
+        if destination.startswith("refs/"):
+            protected = protected or ref in policy["protected_refs"]
+        else:
+            protected = protected or any(r.endswith("/" + destination) for r in policy["protected_refs"])
+    if force and policy["deny_force"]:
+        return "force"
+    if protected:
+        return "protected_ref"
+    # An explicit refspec can still publish reachable tags through push.followTags.
+    # Requiring the override avoids assuming or querying the receiver's Git config.
+    return None if no_follow_tags else "unknown"
+
+
+def _push_reply(decision: str, code: str) -> dict:
+    return {"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": decision,
+                                   "permissionDecisionReason": "Safety Core push policy: " + code}}
+
+
+def push_policy_main(argv: list) -> int:
+    """Strict independent CLI. No doctrine, subprocesses, installation or map credit."""
+    try:
+        if len(argv) != 3 or argv[1] not in ("--push-policy", "--check-push-policy"):
+            raise PushPolicyError("arguments")
+        policy = load_push_policy(Path(argv[2]))
+        if argv[1] == "--check-push-policy":
+            print(json.dumps({"push_policy": {"status": "valid", "version": 1,
+                                              "protected_ref_count": len(policy["protected_refs"]),
+                                              "decision": policy["decision"], "deny_force": policy["deny_force"],
+                                              "deny_output": policy["deny_output"]}}, sort_keys=True))
+            return 0
+        raw = sys.stdin.buffer.read(PUSH_EVENT_MAX_BYTES + 1)
+        if len(raw) > PUSH_EVENT_MAX_BYTES:
+            raise PushPolicyError("input_too_large")
+        payload = _push_json(raw)
+        if (not isinstance(payload, dict) or payload.get("hook_event_name") != "PreToolUse"
+                or payload.get("tool_name") != "Bash" or not isinstance(payload.get("tool_input"), dict)
+                or not isinstance(payload["tool_input"].get("command"), str)):
+            raise PushPolicyError("input_shape")
+        reason = evaluate_push_policy(payload["tool_input"]["command"], policy)
+        if reason:
+            if policy["deny_output"] == "exit2":
+                sys.stderr.write("Safety Core push policy denied: " + reason + "\n")
+                return 2
+            print(json.dumps(_push_reply(policy["decision"], reason), sort_keys=True))
+        return 0
+    except PushPolicyError as exc:
+        code = str(exc)
+    except Exception:
+        code = "internal_error"
+    sys.stderr.write("Safety Core push policy denied: " + code + "\n")
+    return 2
+
+
 def main(argv: list) -> None:
     raw = sys.stdin.read()
     payload = json.loads(raw) if raw.strip() else {}
@@ -1310,6 +1530,8 @@ def main(argv: list) -> None:
 
 
 if __name__ == "__main__":
+    if any(arg.startswith(("--push-policy", "--check-push-policy")) for arg in sys.argv[1:]):
+        sys.exit(push_policy_main(sys.argv))
     try:
         main(sys.argv)
     except Exception as exc:  # a fault here must never block the agent's tool call

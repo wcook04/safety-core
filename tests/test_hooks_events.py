@@ -489,5 +489,131 @@ class Wiring(unittest.TestCase):
         self.assertEqual(data, {"hooks": expected})
 
 
+
+
+
+class DedicatedPushPolicyProtocol(unittest.TestCase):
+    def setUp(self):
+        import tempfile
+        from pathlib import Path
+        self.temp = tempfile.TemporaryDirectory(prefix="push-policy-")
+        self.addCleanup(self.temp.cleanup)
+        self.policy = Path(self.temp.name) / "policy with spaces.json"
+        self.config = {"version": 1, "protected_refs": ["refs/heads/main"],
+                       "decision": "ask", "deny_force": True}
+        self.policy.write_text(json.dumps(self.config))
+
+    def invoke(self, raw=None, flag="--push-policy", path=None):
+        if raw is None:
+            raw = json.dumps({"hook_event_name": "PreToolUse", "tool_name": "Bash",
+                              "tool_input": {"command": "git push origin HEAD:refs/heads/main"}})
+        return subprocess.run([sys.executable, str(ROOT / "hooks.py"), flag,
+                               str(path or self.policy)], input=raw, capture_output=True, text=True)
+
+    def test_check_ask_deny_and_neutral_protocol(self):
+        checked = self.invoke(flag="--check-push-policy")
+        self.assertEqual(checked.returncode, 0, checked.stderr)
+        self.assertEqual(json.loads(checked.stdout)["push_policy"]["status"], "valid")
+        for decision in ["ask", "deny"]:
+            self.policy.write_text(json.dumps(dict(self.config, decision=decision)))
+            p = self.invoke()
+            self.assertEqual(p.returncode, 0, p.stderr)
+            self.assertEqual(json.loads(p.stdout)["hookSpecificOutput"]["permissionDecision"], decision)
+        for command in ["git status --short", "git push --no-follow-tags origin HEAD:refs/heads/topic"]:
+            p = self.invoke(json.dumps({"hook_event_name": "PreToolUse", "tool_name": "Bash",
+                                       "tool_input": {"command": command}}))
+            self.assertEqual((p.returncode, p.stdout, p.stderr), (0, "", ""))
+
+    def assert_fatal(self, p):
+        self.assertEqual(p.returncode, 2)
+        self.assertEqual(p.stdout, "")
+        self.assertIn("Safety Core push policy denied:", p.stderr)
+        self.assertNotIn("secret-content", p.stdout + p.stderr)
+
+    def test_runtime_json_uses_only_standard_hook_output(self):
+        for refs, command in [(["refs/tags/release"], "git push origin refs/tags/release:release"),
+                              (["refs/heads/main"], "git push origin HEAD:main")]:
+            self.policy.write_text(json.dumps(dict(self.config, protected_refs=refs)))
+            raw = json.dumps({"hook_event_name":"PreToolUse", "tool_name":"Bash",
+                              "tool_input":{"command":command}})
+            p = self.invoke(raw)
+            self.assertEqual(p.returncode, 0)
+            payload = json.loads(p.stdout)
+            self.assertEqual(set(payload), {"hookSpecificOutput"})
+            self.assertEqual(set(payload["hookSpecificOutput"]),
+                             {"hookEventName", "permissionDecision", "permissionDecisionReason"})
+            self.assertEqual(payload["hookSpecificOutput"]["permissionDecision"], "ask")
+
+    def test_exit2_deny_protocol_and_invalid_ask_combination(self):
+        self.policy.write_text(json.dumps(dict(self.config, decision="deny", deny_output="exit2")))
+        checked = self.invoke(flag="--check-push-policy")
+        self.assertEqual(checked.returncode, 0)
+        self.assertEqual(json.loads(checked.stdout)["push_policy"]["deny_output"], "exit2")
+        self.assert_fatal(self.invoke())
+        neutral = self.invoke(json.dumps({"hook_event_name":"PreToolUse", "tool_name":"Bash",
+                                         "tool_input":{"command":"git push --no-follow-tags origin HEAD:refs/heads/topic"}}))
+        self.assertEqual((neutral.returncode, neutral.stdout, neutral.stderr), (0, "", ""))
+        self.policy.write_text(json.dumps(dict(self.config, deny_output="exit2")))
+        self.assert_fatal(self.invoke())
+        self.assertIn("policy_deny_output", self.invoke(flag="--check-push-policy").stderr)
+        self.policy.write_text(json.dumps(dict(self.config, deny_output="unknown")))
+        self.assert_fatal(self.invoke())
+
+    def test_missing_malformed_duplicate_oversized_policy(self):
+        self.assert_fatal(self.invoke(path=self.policy.parent / "absent"))
+        self.assert_fatal(self.invoke(path=self.policy.parent))
+        for raw in ['{secret-content', '{"version":1,"version":1}', 'x' * (hooks.PUSH_POLICY_MAX_BYTES + 1)]:
+            self.policy.write_text(raw)
+            self.assert_fatal(self.invoke())
+            self.assert_fatal(self.invoke(flag="--check-push-policy"))
+
+    def test_policy_schema_rejects_wrong_types_and_unknown_keys(self):
+        variants = [dict(self.config, version=True), dict(self.config, deny_force=1),
+                    dict(self.config, protected_refs="refs/heads/main"),
+                    dict(self.config, protected_refs=[]), dict(self.config, protected_refs=["main"]),
+                    dict(self.config, protected_refs=["refs/heads/*"]),
+                    dict(self.config, protected_refs=["refs/heads/main", "refs/heads/main"]),
+                    dict(self.config, protected_refs=[42]), dict(self.config, decision="off"),
+                    dict(self.config, extra=True)]
+        for config in variants:
+            with self.subTest(config=config):
+                self.policy.write_text(json.dumps(config))
+                self.assert_fatal(self.invoke())
+
+    def test_strict_flag_misspellings_and_missing_arguments_do_not_fall_back(self):
+        for args in [["--push-policy"], ["--check-push-policy"],
+                     ["--push-policy=" + str(self.policy)],
+                     ["--check-push-policy=" + str(self.policy)],
+                     ["--push-policy-typo", str(self.policy)],
+                     ["--check-push-policy-typo", str(self.policy)],
+                     ["--push-policy", str(self.policy), "extra"]]:
+            with self.subTest(args=args):
+                p = subprocess.run([sys.executable, str(ROOT / "hooks.py"), *args],
+                                   input="{}", capture_output=True, text=True)
+                self.assert_fatal(p)
+                self.assertIn("arguments", p.stderr)
+
+    def test_input_failures_and_size_limit_are_blocking(self):
+        for raw in ["", "{secret-content", "[]", "{}", '{"tool_name":"Bash","tool_name":"Bash"}',
+                    json.dumps({"hook_event_name":"PreToolUse","tool_name":"PowerShell","tool_input":{"command":"secret-content"}}),
+                    json.dumps({"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":42}}),
+                    "x" * (hooks.PUSH_EVENT_MAX_BYTES + 1)]:
+            with self.subTest(size=len(raw)):
+                self.assert_fatal(self.invoke(raw))
+
+    def test_internal_error_is_strict_but_legacy_remains_fail_open(self):
+        output, error = io.StringIO(), io.StringIO()
+        with mock.patch.object(hooks, "load_push_policy", side_effect=RuntimeError("secret-content")), \
+                mock.patch.object(sys, "stdout", output), mock.patch.object(sys, "stderr", error):
+            code = hooks.push_policy_main(["hooks.py", "--push-policy", str(self.policy)])
+        self.assertEqual(code, 2)
+        self.assertEqual(output.getvalue(), "")
+        self.assertIn("internal_error", error.getvalue())
+        self.assertNotIn("secret-content", output.getvalue() + error.getvalue())
+        legacy = subprocess.run([sys.executable, str(ROOT / "hooks.py")], input="not-json",
+                                capture_output=True, text=True)
+        self.assertEqual(legacy.returncode, 0)
+
+
 if __name__ == "__main__":
     unittest.main()

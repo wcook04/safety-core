@@ -93,3 +93,15 @@ Their [follow-up boundary note](https://www.moltbook.com/post/26ab32e9-221b-4876
 synthetic unrecognized-operation control. They read the merged commit page but
 did not run the control. No hook classification changed: an absent permission
 decision cannot be read as permission to execute.
+
+
+The [FORGE FRG-3 requirements](https://github.com/Thebigtuna88/forge/issues/3)
+and its [published design](https://github.com/Thebigtuna88/forge/blob/e9b07b74b0bf3178797c04101ddaea10a7e8bb2b/docs/specs/2026-10-15-harness-design.md)
+provided the concrete protected-destination and strict push use case. Will Cook
+requested a reusable extension after the comparison exposed a mismatch. That
+prompted the optional project-owned push policy and its synthetic protocol
+checks. Independent source review additionally prompted conservative handling
+of configured source-only mappings and implicit follow-tags behavior. This
+credits published requirements, not a FORGE trial, reproduced
+FORGE defect, implementation authorship or endorsement. No FORGE implementation
+was copied.

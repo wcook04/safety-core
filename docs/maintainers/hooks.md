@@ -128,6 +128,99 @@ and the default applies.
 Notes to Claude are written as factual statements, because Claude Code's documentation warns
 that text framed as instructions can be treated as a prompt injection.
 
+## Optional project-specific push policy
+
+The ordinary hook settings above retain their defaults. For projects that need
+stricter Git push rules, `hooks.py --push-policy /absolute/path/push-policy.json`
+is a separate, opt-in `PreToolUse` handler. It reads no doctrine and does not
+run the event's command. Keep the ordinary hook installed too: the push handler
+does not run secret scanning, rule-file checks or session recording.
+
+A project-owned policy selects protected **full destination refs**, an `ask` or
+`deny` decision, and whether to reject force pushes:
+
+```json
+{
+  "version": 1,
+  "protected_refs": ["refs/heads/main", "refs/heads/dev"],
+  "decision": "deny",
+  "deny_force": true,
+  "deny_output": "exit2"
+}
+```
+
+The optional `deny_output` is `"json"` by default or `"exit2"` for a denial
+protocol based on status 2 and stderr. `decision: "ask"` requires JSON output;
+combining it with `"exit2"` is rejected. The example chooses strict exit-code
+denials. Use literal refs, not shell expressions or glob patterns. Different projects can
+protect different branches or tags without changing the runtime. The same
+validator is available without installing anything:
+
+```sh
+python3 .doctrine/hooks.py --check-push-policy /absolute/path/push-policy.json
+```
+
+Append a separate group to your existing `.claude/settings.json` under
+`hooks.PreToolUse`; do not replace existing groups:
+
+```json
+{
+  "matcher": "Bash",
+  "hooks": [{
+    "type": "command",
+    "command": "python3 \"$CLAUDE_PROJECT_DIR\"/.doctrine/hooks.py --push-policy \"$CLAUDE_PROJECT_DIR\"/.doctrine/push-policy.json",
+    "timeout": 15,
+    "onFailure": "block"
+  }]
+}
+```
+
+Review the policy and settings, start a new Claude Code session and inspect the
+host's hook configuration. The current Claude Code hook reference documents
+`onFailure: "block"` for startup errors and timeouts; verify your installed host
+supports that field. These protocol tests do not establish that host behavior.
+This is a deliberate manual addition; `init` does
+not create this policy or enable it, and rebuilding does not install it. It
+receives **no automatic enforcement credit in the current doctrine map**.
+`--check-push-policy` validates the policy, not wiring or live host execution.
+
+The handler inspects a limited explicit Git push grammar. It judges the remote
+**destination**, so `HEAD:main`, `refs/heads/main` and deletion refspecs cannot
+avoid a configured `refs/heads/main` restriction. An ordinary push with an explicit `source:full-destination` and
+`--no-follow-tags` to an unprotected destination is neutral under this handler; other guards and
+host permissions still apply. It never emits an `allow` decision.
+
+A bare push, a source-only refspec, a dynamic or ambiguous destination, an
+unsupported push option, a push without `--no-follow-tags`, or
+wrapped/compound Git-looking command receives the configured decision rather
+than being inferred safe. A source-only refspec may inherit a different
+destination from `remote.<name>.push`; `--no-follow-tags` prevents ambient
+`push.followTags` from adding destinations omitted from the command. This conservative rule can also flag harmless wrappers,
+compound status commands or text quoting a Git command; review that tradeoff
+before enabling it. The parser does not expand Git aliases, shell functions or
+variables, inspect scripts, resolve remote configuration, or understand
+PowerShell. Indirect calls such as a Python program that performs a push, recursive
+submodule pushes, and actions inside Git hooks or on the server are outside
+this direct-target command-line check. Use server-side branch protection and restricted
+credentials for boundaries that must survive indirect execution or local edits.
+
+Recognized policy decisions use exit 0 with Claude Code's `permissionDecision`
+JSON (`ask` or `deny`), except a configured `deny_output: "exit2"` denial uses
+status 2 and stderr with empty stdout. Missing/malformed policy, invalid event input and internal
+handler errors exit 2 with a reason on stderr, regardless of the configured
+`ask` mode. The explicit flag preserves that error behavior when policy parsing
+fails; the ordinary handler's error behavior remains unchanged. This process cannot repair a missing Python runtime, an unstarted hook,
+a host timeout or removed wiring. The host must apply its configured failure
+behavior; removed wiring supplies no guard. Verify those cases at that host. See the
+[host output contract](https://code.claude.com/docs/en/hooks#exit-code-output).
+
+Before using this on real work, feed synthetic events for a protected destination,
+a wrapped push, an ordinary status command and an explicit unprotected push such as
+`git push --no-follow-tags origin HEAD:refs/heads/feature/review`.
+Repeat with a missing/invalid policy and require exit 2. Do not execute the push
+commands. A protocol result alone is not live host enforcement or full project
+policy acceptance.
+
 ## The session record
 
 Everything the hooks record lives in `.doctrine/sessions/<session id>/`:
