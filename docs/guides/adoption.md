@@ -95,6 +95,15 @@ code in the hook implementation and its literal `CHECKS` declaration, a principl
 binding, appropriate event wiring, and tests. Safety Core does not currently offer
 an arbitrary policy language or compile natural language into enforceable policy.
 
+### Protect project-selected Git push destinations
+
+Projects can opt into a separate push-policy handler with their own protected
+refs and an `ask` or `deny` decision. For example, a team can protect `main` and
+`dev`, while another protects a release tag. The [push-policy guide](../maintainers/hooks.md#optional-project-specific-push-policy)
+contains the JSON schema example, validation command, additive hook wiring and
+failure behavior. This extension is manually enabled and has no automatic map
+coverage credit. It supplements the ordinary checks; it does not replace them.
+
 ## 5. Keep changes deliberate and inspectable
 
 Change the authored rulebook; rebuild the generated files. Record why a meaningful
