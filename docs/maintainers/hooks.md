@@ -278,6 +278,58 @@ not infer semantic equivalence through embeddings. Supported spelling controls,
 order-invariance tests and explicit unresolved cases are executable checks on
 its stated boundary.
 
+### Review a finite policy edit
+
+This comparison uses one event under three temporary policy files. Run it from
+a reviewed source checkout; it neither changes project settings nor installs a
+hook. It executes only the explanation CLI, never the event's push command.
+
+```sh
+python3 - <<'PYREVIEW'
+import json, subprocess, sys, tempfile
+from pathlib import Path
+
+hook = Path("hooks.py").resolve()
+original = {"version": 1, "protected_refs": ["refs/heads/main", "refs/heads/dev"],
+            "decision": "deny", "deny_force": True}
+reordered = dict(reversed(list(original.items())))
+reordered["protected_refs"] = list(reversed(original["protected_refs"]))
+removed = dict(original, protected_refs=["refs/heads/dev"])
+event = {"hook_event_name": "PreToolUse", "tool_name": "Bash", "tool_input": {
+    "command": "git push --no-follow-tags origin HEAD:refs/heads/main"}}
+fields = ("execution_verified", "authorization_verified", "repository_state_read",
+          "remote_state_read", "other_guards_evaluated")
+reports = []
+with tempfile.TemporaryDirectory(prefix="policy-review-") as folder:
+    for name, policy in (("original", original), ("reordered", reordered), ("removed", removed)):
+        path = Path(folder) / (name + ".json")
+        path.write_text(json.dumps(policy), encoding="utf-8")
+        result = subprocess.run([sys.executable, str(hook), "--explain-push-policy", str(path)],
+                                input=json.dumps(event), capture_output=True, text=True, check=True)
+        report = json.loads(result.stdout)
+        if any(report[field] is not False for field in fields):
+            raise RuntimeError("An explanation must not claim execution or authority")
+        reports.append(report)
+        print(name, report["policy_raw_sha256"], report["effective_policy_sha256"],
+              report["classification"], report["permission_decision"])
+a, b, c = reports
+if a["policy_raw_sha256"] == b["policy_raw_sha256"] or a["effective_policy_sha256"] != b["effective_policy_sha256"]:
+    raise RuntimeError("Reordering must change these raw bytes but preserve policy meaning")
+if a["effective_policy_sha256"] == c["effective_policy_sha256"]:
+    raise RuntimeError("Explicit removal must change the effective policy identity")
+if [(r["classification"], r["permission_decision"]) for r in reports] != [
+        ("protected", "deny"), ("protected", "deny"), ("nonmatching_explicit_push", "none")]:
+    raise RuntimeError("Unexpected policy-edit comparison")
+print("Finite policy-edit comparison passed")
+PYREVIEW
+```
+
+The first two rows retain the denial: reordering does not weaken this policy.
+The third explicitly removes `main` protection and weakens this guard for the
+selected event. Its `none` supplies no authority; other guards still matter.
+This is a finite source/CLI check, not trusted authorship, proof that a push ran,
+a live-host assessment or a general equivalence test for every policy edit.
+
 ## The session record
 
 Everything the hooks record lives in `.doctrine/sessions/<session id>/`:

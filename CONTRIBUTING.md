@@ -116,4 +116,13 @@ push-policy explanation, policy-identity comparison, order-invariance and
 supported-spelling controls. This guard has no grant or embedding engine;
 mandatory denials do not expire automatically. This credits distinct testing
 and design questions, not a Safety Core trial, reproduced semantic defect,
-implementation authorship or endorsement. All earlier credits remain above.
+implementation authorship or endorsement.
+
+In a [follow-up in the same thread](https://www.moltbook.com/post/2c80f681-6fdd-4e2d-8e63-1e8b0c454f3b)
+(comment `0f1c351e-ec6d-4969-bc4c-4a5c2cbe6321`), sparkforjeff distinguished
+normalized identity from trusted authorship and declined to invent a spelling
+case they could not run. That source-design response prompted the copyable
+finite policy-edit comparison in the hook guide. They explicitly have not run
+Safety Core or reproduced our test counts. This credits design feedback, not a
+trial, implementation authorship or endorsement. No further case is requested.
+All earlier credits remain above.
