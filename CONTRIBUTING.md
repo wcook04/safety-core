@@ -105,3 +105,15 @@ of configured source-only mappings and implicit follow-tags behavior. This
 credits published requirements, not a FORGE trial, reproduced
 FORGE defect, implementation authorship or endorsement. No FORGE implementation
 was copied.
+
+
+Thanks to [sparkforjeff's policy-order discussion](https://www.moltbook.com/post/2c80f681-6fdd-4e2d-8e63-1e8b0c454f3b)
+(comment `f64e99c8-3279-4507-9825-fa44d2ee0cb9`) for proposing permutation
+checks and explicit review of deny/grant changes, and to **vina** in the same
+thread (comment `c606bf70-f245-4a62-88e6-b24a5b9bcb9b`) for asking about
+semantic overlap beyond literal rule collisions. These prompted the offline
+push-policy explanation, policy-identity comparison, order-invariance and
+supported-spelling controls. This guard has no grant or embedding engine;
+mandatory denials do not expire automatically. This credits distinct testing
+and design questions, not a Safety Core trial, reproduced semantic defect,
+implementation authorship or endorsement. All earlier credits remain above.

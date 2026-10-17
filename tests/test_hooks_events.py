@@ -615,5 +615,85 @@ class DedicatedPushPolicyProtocol(unittest.TestCase):
         self.assertEqual(legacy.returncode, 0)
 
 
+    def test_offline_explanation_protocol_identity_privacy_and_host_projection(self):
+        import hashlib
+        command = "git -C 'private project secret-content' push origin HEAD:main"
+        event = json.dumps({"hook_event_name":"PreToolUse", "tool_name":"Bash",
+                            "cwd":"/private/secret-content", "tool_input":{"command":command}})
+        for output in ["json", "exit2"]:
+            self.policy.write_text(json.dumps(dict(self.config, decision="deny", deny_output=output)))
+            p = self.invoke(event, flag="--explain-push-policy")
+            self.assertEqual((p.returncode, p.stderr), (0, ""))
+            report = json.loads(p.stdout)
+            self.assertEqual(report["schema"], "safety_core_push_policy_explanation_v1")
+            self.assertEqual((report["classification"], report["permission_decision"]), ("protected", "deny"))
+            self.assertEqual(report["command_sha256"], hashlib.sha256(command.encode()).hexdigest())
+            self.assertEqual(report["policy_raw_sha256"], hashlib.sha256(self.policy.read_bytes()).hexdigest())
+            self.assertEqual(report["runtime_source_sha256"], hashlib.sha256((ROOT / "hooks.py").read_bytes()).hexdigest())
+            self.assertEqual(report["python_version"], sys.version.split()[0])
+            for name in ["execution_verified", "authorization_verified", "repository_state_read",
+                         "remote_state_read", "other_guards_evaluated"]:
+                self.assertIs(report[name], False)
+            self.assertNotIn("secret-content", p.stdout + p.stderr)
+            host = self.invoke(event)
+            if output == "json":
+                self.assertEqual(json.loads(host.stdout)["hookSpecificOutput"]["permissionDecision"], report["permission_decision"])
+                self.assertEqual(set(json.loads(host.stdout)), {"hookSpecificOutput"})
+            else:
+                self.assertEqual((host.returncode, host.stdout), (2, ""))
+
+    def test_effective_policy_identity_is_order_invariant_and_changes_on_edit(self):
+        config = dict(self.config, protected_refs=["refs/heads/main", "refs/tags/release"])
+        self.policy.write_text(json.dumps(config))
+        first, a = hooks.load_push_policy_identity(self.policy)
+        self.policy.write_text(json.dumps(dict(reversed(list(dict(config, protected_refs=list(reversed(config["protected_refs"])), deny_output="json").items()))), indent=2))
+        second, b = hooks.load_push_policy_identity(self.policy)
+        self.assertNotEqual(a["policy_raw_sha256"], b["policy_raw_sha256"])
+        self.assertEqual(a["effective_policy_sha256"], b["effective_policy_sha256"])
+        command = "git push --no-follow-tags origin HEAD:refs/heads/main"
+        self.assertEqual(hooks.analyze_push_policy(command, first), hooks.analyze_push_policy(command, second))
+        self.policy.write_text(json.dumps(dict(config, protected_refs=["refs/tags/release"])))
+        changed, c = hooks.load_push_policy_identity(self.policy)
+        self.assertNotEqual(b["effective_policy_sha256"], c["effective_policy_sha256"])
+        self.assertEqual(hooks.analyze_push_policy(command, changed)["permission_decision"], "none")
+        self.assertEqual(hooks.analyze_push_policy(command, first)["permission_decision"], "ask")
+
+    def test_identity_uses_validated_snapshot_even_if_policy_path_changes(self):
+        import hashlib
+        captured = self.policy.read_bytes()
+        def captured_read(path):
+            path.write_text(json.dumps(dict(self.config, protected_refs=["refs/heads/other"])))
+            return captured
+        with mock.patch.object(hooks, "_read_push_policy", side_effect=captured_read) as read:
+            policy, identity = hooks.load_push_policy_identity(self.policy)
+        read.assert_called_once_with(self.policy)
+        self.assertEqual(identity["policy_raw_sha256"], hashlib.sha256(captured).hexdigest())
+        self.assertNotEqual(identity["policy_raw_sha256"], hashlib.sha256(self.policy.read_bytes()).hexdigest())
+        self.assertEqual(policy["protected_refs"], ["refs/heads/main"])
+        with mock.patch.object(hooks, "_read_push_policy", return_value=b"invalid snapshot"):
+            with self.assertRaises(hooks.PushPolicyError):
+                hooks.load_push_policy_identity(self.policy)
+
+    def test_explanation_errors_keep_strict_protocol_and_do_not_echo_input(self):
+        for raw in ["{}", "not-json secret-content", "x" * (hooks.PUSH_EVENT_MAX_BYTES + 1)]:
+            self.assert_fatal(self.invoke(raw, flag="--explain-push-policy"))
+        self.policy.write_text("invalid policy secret-content")
+        self.assert_fatal(self.invoke(flag="--explain-push-policy"))
+        for args in [["--explain-push-policy"], ["--explain-push-policy=" + str(self.policy)],
+                     ["--explain-push-policy-typo", str(self.policy)]]:
+            p = subprocess.run([sys.executable, str(ROOT / "hooks.py"), *args], input="{}", capture_output=True, text=True)
+            self.assert_fatal(p)
+        self.policy.write_text(json.dumps(self.config))
+        output, error = io.StringIO(), io.StringIO()
+        payload = json.dumps({"hook_event_name":"PreToolUse", "tool_name":"Bash", "tool_input":{"command":"git status"}}).encode()
+        with mock.patch.object(sys, "stdin", mock.Mock(buffer=io.BytesIO(payload))), \
+                mock.patch.object(sys, "stdout", output), mock.patch.object(sys, "stderr", error), \
+                mock.patch.object(hooks, "explain_push_policy", side_effect=RuntimeError("secret-content")):
+            code = hooks.push_policy_main(["hooks.py", "--explain-push-policy", str(self.policy)])
+        self.assertEqual((code, output.getvalue()), (2, ""))
+        self.assertIn("internal_error", error.getvalue())
+        self.assertNotIn("secret-content", error.getvalue())
+
+
 if __name__ == "__main__":
     unittest.main()
