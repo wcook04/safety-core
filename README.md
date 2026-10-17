@@ -1,6 +1,18 @@
 # Safety Core
 
-**An editable rulebook and practical checks for your own coding-agent setup.**
+**Edit your project's agent rules, connect them to files, and inspect which checks support them.**
+
+Project rules can be scattered across instruction files, or describe protections
+that no tool actually checks. Safety Core gives people maintaining a coding-agent
+setup one editable project rulebook. It generates written guidance, checks for
+drift and missing connections, and supplies selected Claude Code runtime controls.
+
+The workflow is to copy the toolkit into a project, edit its rulebook, rebuild,
+and inspect a file's guidance and configured checks. For example, a rule about
+preserving meaningful tests can target your test files: the generated path rules
+carry that guidance, and a Claude Code edit event can deliver a reminder. That
+reminder does not establish that the edit preserved the tests' meaning. The map
+and CLI help you see the difference between a written rule and an executable check.
 
 [Plectis website](https://wcook04.github.io/plectis/) ·
 [Get started](#what-happens-after-cloning) · [Documentation](docs/README.md) ·
@@ -27,11 +39,10 @@ reasons), **glue72desk** (a prohibitions pass can omit a requested issue) and
 fifteen principles and their routes to repository files. It shows configured
 guidance and checks; execution is not assessed.*
 
-Safety Core is for people building or adapting systems around AI coding agents.
-You choose the principles, connect them to places in your repository, and inspect
-which ones are instructions, reminders or executable checks. The starting rules
-cover ordinary concerns: keep people in control, do useful work without constant
-permission prompts, preserve tests, keep secrets out, and report results honestly.
+The starting rules cover ordinary concerns: keep people in control, do useful
+work without constant permission prompts, preserve tests, keep secrets out, and
+report results honestly. You can change the rules and their file routes for your
+own project.
 
 It adapts selected ideas from [Anthropic's Claude Constitution](https://www.anthropic.com/constitution)
 to repository work. You can revise that starting point for your project. It does
@@ -39,6 +50,32 @@ not train a model or implement the complete Constitution.
 
 Claude Code runs the runtime hooks. Codex and other agents can read the generated
 instructions; that does not make them run those hooks.
+
+## Status
+
+### Usable today
+
+Copy the toolkit into a project with Python 3.11+ and Git, edit the local
+rulebook, and use `build`, `check`, `explain` and the map. Claude Code can run the
+configured hooks; other agents can read the generated instructions. The
+[optional push policy](#optional-project-push-policy) also has standalone
+validation and offline explanation commands.
+
+### Tested
+
+The repository's examples and tests exercise copied-project setup, generated
+instructions, configuration drift, synthetic hook events and push-policy
+classification. [Skitter's outside report](CONTRIBUTING.md#feedback-contributions)
+covers a pinned disposable Linux demo. A successful fixture or static configuration
+check is separate from a successful task in somebody's real project.
+
+### Experimental or unverified
+
+Windows behavior remains unverified. The linked fixture reports and source
+feedback do not establish independent real-project adoption, complete host
+integration or protection against arbitrary commands. Each host and project
+needs its own acceptance check. Safety Core is a rulebook toolkit, not an agent
+framework, sandbox or task-completeness evaluator.
 
 ## What happens after cloning?
 
@@ -119,6 +156,33 @@ bash examples/demo.sh
 The demo uses synthetic events and temporary repositories, with no external
 publication. It tests hook responses, not delivery through your agent host.
 
+## Optional project push policy
+
+The ordinary irreversible-command guard does not protect every push. A separate,
+opt-in policy can name protected refs and ask or deny when a supported push
+matches them, uses force, or cannot be resolved by its narrow parser. It makes
+no decision for an explicitly unmatched supported push; that supplies no authority.
+
+Save a JSON policy using the [push-policy guide](docs/maintainers/hooks.md#optional-project-specific-push-policy).
+From the source clone, validate it and inspect a synthetic event:
+
+```sh
+python3 hooks.py --check-push-policy "/absolute/path/push-policy.json"
+printf '%s\n' '{"hook_event_name":"PreToolUse","tool_name":"Bash","tool_input":{"command":"git push origin HEAD:main"}}' |
+  python3 hooks.py --explain-push-policy "/absolute/path/push-policy.json"
+```
+
+The explanation classifies text and records policy/source fingerprints; it does
+not execute the push, prove authorization or establish trusted authorship. The
+same guide includes an [executable policy-edit comparison](docs/maintainers/hooks.md#review-a-finite-policy-edit).
+
+Enforcement uses `--push-policy PATH` through a **separately reviewed, manually
+wired** Bash `PreToolUse` hook. Ordinary `init` and plugin setup do not enable
+this optional mode, and the ordinary map does not automatically count it as
+coverage. Its strict input/configuration error handling differs from the default
+handler; read the [protocol and grammar limits](docs/maintainers/hooks.md#optional-project-specific-push-policy)
+before wiring it.
+
 ## What the checks actually cover
 
 Runtime hooks target **Claude Code**. Codex and other supported agents can read
@@ -149,8 +213,8 @@ prohibition while omitting a requested issue; a configuration pass does not
 certify that the task is complete. Add a separate task-specific acceptance check
 when an omission must prevent delivery.
 
-Hooks recognize selected patterns, can be bypassed, and fail open on internal
-errors. They do not provide host isolation, access control or complete secret
+The ordinary hooks recognize selected patterns, can be bypassed, and fail open
+on internal errors. They do not provide host isolation, access control or complete secret
 detection. See [hook details and limits](docs/maintainers/hooks.md).
 
 ## Repository map
