@@ -222,6 +222,62 @@ Repeat with a missing/invalid policy and require exit 2. Do not execute the push
 commands. A protocol result alone is not live host enforcement or full project
 policy acceptance.
 
+### Explain a push policy without running a command
+
+`--explain-push-policy PATH` is an offline diagnostic. It consumes the same
+bounded `PreToolUse`/`Bash` JSON as `--push-policy` and uses the same analyzer,
+but returns a machine-readable explanation instead of a host permission response.
+Do not wire the explanation mode as an enforcement hook.
+
+From a reviewed Safety Core clone, save your policy and run this synthetic
+comparison, replacing the policy path:
+
+```sh
+python3 - <<'PYTEST'
+import json, subprocess, sys
+policy = "/absolute/path/push-policy.json"
+for command in ("git status --short", "git push origin HEAD:refs/heads/main",
+                "git push", "git push --no-follow-tags origin HEAD:refs/heads/feature/review"):
+    event = {"hook_event_name": "PreToolUse", "tool_name": "Bash",
+             "tool_input": {"command": command}}
+    result = subprocess.run([sys.executable, "hooks.py", "--explain-push-policy", policy],
+                            input=json.dumps(event), capture_output=True, text=True, check=True)
+    report = json.loads(result.stdout)
+    print(report["classification"], report["permission_decision"],
+          report["effective_policy_sha256"])
+PYTEST
+```
+
+No command inside an event is executed. With the example `main`/`dev` deny
+policy, the four rows are `nonpush_git/none`, `protected/deny`,
+`unresolved/deny` and `nonmatching_explicit_push/none`. The other classifications
+are `empty`, `nongit` and `force`. An unresolved command is not a proven
+protected-target operation; `none` means this guard has no objection, not that
+the action is authorized. An opaque command classified `nongit` can still have
+side effects this guard cannot inspect.
+
+A completed explanation exits 0 even when its reported decision is `deny` and
+the enforcement policy uses exit-2 output. Invalid policy/input or an internal
+failure still exits 2 with a fixed reason on stderr. The diagnostic reports
+`execution_verified`, `authorization_verified`, `repository_state_read`,
+`remote_state_read` and `other_guards_evaluated` as false.
+
+`policy_raw_sha256` identifies the exact bytes validated in that assessment;
+there is no second policy read for hashing. `effective_policy_sha256` identifies
+the normalized supported policy, including defaults with sorted protected refs,
+so changing key/ref order does not change its meaning. Removing a protected ref
+or changing the decision changes this identity. Compare the same event under
+old and proposed policies before accepting an edit; there is no automatic
+expiry of a prohibition and no grant engine.
+
+The report also gives the observed source-file hash, Python version and command
+hash, without echoing the command or policy path. These identify observed bytes,
+not trusted authorship, an execution attestation or evidence of a live host run.
+Hashes do not conceal guessable inputs. This finite string/ref evaluator does
+not infer semantic equivalence through embeddings. Supported spelling controls,
+order-invariance tests and explicit unresolved cases are executable checks on
+its stated boundary.
+
 ## The session record
 
 Everything the hooks record lives in `.doctrine/sessions/<session id>/`:

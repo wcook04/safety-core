@@ -104,6 +104,12 @@ contains the JSON schema example, validation command, additive hook wiring and
 failure behavior. This extension is manually enabled and has no automatic map
 coverage credit. It supplements the ordinary checks; it does not replace them.
 
+Before live wiring, use the [offline push-policy explanation](../maintainers/hooks.md#explain-a-push-policy-without-running-a-command)
+to compare one ordinary command, a protected destination, an unresolved push
+and a named unprotected destination. Its `none` outcome supplies no authority;
+its successful diagnostic exit does not authorize a command. Compare policy
+identities when reviewing a rule change.
+
 ## 5. Keep changes deliberate and inspectable
 
 Change the authored rulebook; rebuild the generated files. Record why a meaningful

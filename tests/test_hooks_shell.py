@@ -291,5 +291,38 @@ class DedicatedPushPolicyParser(unittest.TestCase):
         self.assertEqual(hooks.evaluate_push_policy("git push -f origin main:refs/heads/main", policy), "protected_ref")
 
 
+    def test_explanation_classifications_project_existing_decisions(self):
+        cases = [(" ", "empty", "none"), ("printf hello", "nongit", "none"),
+                 ("git status --short", "nonpush_git", "none"),
+                 ("git push --no-follow-tags origin HEAD:refs/heads/topic", "nonmatching_explicit_push", "none"),
+                 ("git push origin HEAD:main", "protected", "deny"),
+                 ("git push --force origin topic", "force", "deny"),
+                 ("git push origin topic", "unresolved", "deny")]
+        for command, classification, decision in cases:
+            with self.subTest(command=command):
+                result = hooks.analyze_push_policy(command, self.policy)
+                self.assertEqual((result["classification"], result["permission_decision"]), (classification, decision))
+                self.assertEqual(hooks.evaluate_push_policy(command, self.policy), result["reason_code"])
+                self.assertNotIn("allow", result.values())
+        ask = hooks.analyze_push_policy("git push origin topic", dict(self.policy, decision="ask"))
+        self.assertEqual((ask["classification"], ask["permission_decision"]), ("unresolved", "ask"))
+
+    def test_policy_order_spelling_and_unrelated_additions_do_not_weaken_denial(self):
+        import itertools
+        refs = ["refs/heads/main", "refs/heads/dev", "refs/tags/release"]
+        equivalent_groups = [["git push origin HEAD:main", "git push origin HEAD:refs/heads/main",
+                              "git push origin refs/heads/main:refs/heads/main"],
+                             ["git push origin HEAD:release", "git push origin HEAD:refs/tags/release",
+                              "git push origin refs/tags/release:release"]]
+        for ordering in itertools.permutations(refs):
+            for commands in equivalent_groups:
+                for command in commands:
+                    result = hooks.analyze_push_policy(command, dict(self.policy, protected_refs=list(ordering)))
+                    self.assertEqual((result["classification"], result["permission_decision"]), ("protected", "deny"))
+        original = hooks.analyze_push_policy("git push origin HEAD:main", self.policy)
+        extended = hooks.analyze_push_policy("git push origin HEAD:main", dict(self.policy, protected_refs=refs + ["refs/heads/unrelated"]))
+        self.assertEqual(original, extended)
+
+
 if __name__ == "__main__":
     unittest.main()

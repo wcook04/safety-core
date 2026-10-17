@@ -1337,7 +1337,7 @@ def _push_ref(value: str) -> bool:
                     for part in value.split("/")))
 
 
-def load_push_policy(path: Path) -> dict:
+def _read_push_policy(path: Path) -> bytes:
     import stat
 
     try:
@@ -1351,6 +1351,10 @@ def load_push_policy(path: Path) -> dict:
         raise PushPolicyError("policy_unreadable") from None
     if len(raw) > PUSH_POLICY_MAX_BYTES:
         raise PushPolicyError("policy_too_large")
+    return raw
+
+
+def _validate_push_policy(raw: bytes) -> dict:
     policy = _push_json(raw)
     keys = {"version", "protected_refs", "decision", "deny_force"}
     if not isinstance(policy, dict) or not keys <= set(policy) or set(policy) - keys - {"deny_output"}:
@@ -1369,8 +1373,23 @@ def load_push_policy(path: Path) -> dict:
     return dict(policy, deny_output=output)
 
 
-def evaluate_push_policy(command: str, policy: dict) -> str | None:
-    """Return protected_ref/force/unknown or None, without executing anything.
+def load_push_policy(path: Path) -> dict:
+    """Existing API: validate a single bounded read without changing the result shape."""
+    return _validate_push_policy(_read_push_policy(path))
+
+
+def load_push_policy_identity(path: Path) -> tuple[dict, dict]:
+    """Hash the very bytes validated, never a second read of the policy path."""
+    raw = _read_push_policy(path)
+    policy = _validate_push_policy(raw)
+    canonical = dict(policy, protected_refs=sorted(policy["protected_refs"]))
+    encoded = json.dumps(canonical, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    return policy, {"policy_raw_sha256": hashlib.sha256(raw).hexdigest(),
+                    "effective_policy_sha256": hashlib.sha256(encoded).hexdigest()}
+
+
+def _classify_push_policy(command: str, policy: dict) -> str:
+    """Classify the command without executing it; runtime decisions project this result.
 
     Supported grammar is a single direct `git [-C literal-dir] push`, explicit
     literal remote and one or more literal refspecs. Only the options listed below
@@ -1390,31 +1409,31 @@ def evaluate_push_policy(command: str, policy: dict) -> str | None:
     try:
         words = shlex.split(command, comments=False, posix=True)
     except ValueError:
-        return "unknown"
+        return "unresolved"
     if not words:
-        return None
+        return "empty"
     git_seen = any(os.path.basename(w) == "git" for w in words)
     # Also catches quoted shell bodies and dynamic arguments to literal git.
     git_text = re.search(r"(?<![\w-])git(?:\s|$)", command) is not None
     if not git_seen and not git_text:
-        return None
+        return "nongit"
     if (words[0] != "git" or any(c in command for c in "\n\r;&|<>$`(){}")
             or any(c in command for c in "\\") or "#" in command):
-        return "unknown"
+        return "unresolved"
     args = words[1:]
     while args[:1] == ["-C"]:
         if len(args) < 3 or not args[1] or args[1].startswith("-"):
-            return "unknown"
+            return "unresolved"
         args = args[2:]
     if not args:
-        return "unknown"
+        return "unresolved"
     # These builtins are neutral to this push-only policy, not universally safe.
     if args[0] in {"status", "diff", "log", "show", "rev-parse", "ls-files", "ls-tree",
                    "add", "commit", "branch", "checkout", "switch", "fetch", "pull",
                    "merge", "rebase", "reset", "clean", "tag", "worktree", "config"}:
-        return None
+        return "nonpush_git"
     if args[0] != "push":
-        return "unknown"
+        return "unresolved"
     positional, force, delete, options, no_follow_tags = [], False, False, True, False
     neutral = {"-u", "--set-upstream", "-n", "--dry-run", "--porcelain", "-v", "--verbose", "-q", "--quiet"}
     for word in args[1:]:
@@ -1430,39 +1449,39 @@ def evaluate_push_policy(command: str, policy: dict) -> str | None:
         elif options and word in {"--delete", "-d"}:
             delete = True
         elif options and word.startswith("-"):
-            return "unknown"
+            return "unresolved"
         else:
             positional.append(word)
     if force and policy["deny_force"]:
         return "force"
     if len(positional) < 2 or not positional[0] or positional[0].startswith("-"):
-        return "unknown"
+        return "unresolved"
     remote, specs = positional[0], positional[1:]
     # A remote is a name, not a URL/path/remote-helper invocation with unknown semantics.
     if not re.fullmatch(r"[A-Za-z0-9_][A-Za-z0-9_.-]*", remote):
-        return "unknown"
+        return "unresolved"
     protected = False
     for spec in specs:
         if spec.startswith("+"):
             force = True
             spec = spec[1:]
         if spec.count(":") > 1 or not spec:
-            return "unknown"
+            return "unresolved"
         if ":" in spec:
             source, destination = spec.split(":")
             if delete:
-                return "unknown"
+                return "unresolved"
         else:
             source, destination = spec, spec
             if not delete:
-                return "unknown"
+                return "unresolved"
         if source and not _push_ref(source if source.startswith("refs/") else "refs/heads/" + source):
-            return "unknown"
+            return "unresolved"
         if destination == "HEAD":
-            return "unknown"
+            return "unresolved"
         ref = destination if destination.startswith("refs/") else "refs/heads/" + destination
         if not _push_ref(ref):
-            return "unknown"
+            return "unresolved"
         # A short destination can resolve to a tag or another namespace. We do
         # not read local refs or remote state: protect every possible configured
         # suffix, including full-source tag refspecs with a short destination.
@@ -1473,10 +1492,40 @@ def evaluate_push_policy(command: str, policy: dict) -> str | None:
     if force and policy["deny_force"]:
         return "force"
     if protected:
-        return "protected_ref"
+        return "protected"
     # An explicit refspec can still publish reachable tags through push.followTags.
     # Requiring the override avoids assuming or querying the receiver's Git config.
-    return None if no_follow_tags else "unknown"
+    return "nonmatching_explicit_push" if no_follow_tags else "unresolved"
+
+
+def analyze_push_policy(command: str, policy: dict) -> dict:
+    """Pure assessment shared by host enforcement and the offline explanation.
+
+    None means this guard makes no permission decision, not that an action is
+    authorized. Unresolved text and a known protected target remain distinct
+    even when both produce the same configured decision.
+    """
+    classification = _classify_push_policy(command, policy)
+    reason = {"protected": "protected_ref", "force": "force", "unresolved": "unknown"}.get(classification)
+    return {"classification": classification, "reason_code": reason,
+            "permission_decision": policy["decision"] if reason else "none"}
+
+
+def evaluate_push_policy(command: str, policy: dict) -> str | None:
+    """Compatibility projection: preserve the established hook reason and protocol."""
+    return analyze_push_policy(command, policy)["reason_code"]
+
+
+def explain_push_policy(command: str, policy: dict, identity: dict) -> dict:
+    """Offline report, not a host permission response or an execution receipt."""
+    return {"schema": "safety_core_push_policy_explanation_v1",
+            **analyze_push_policy(command, policy), **identity,
+            "runtime_source_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+            "python_version": sys.version.split()[0],
+            "command_sha256": hashlib.sha256(command.encode("utf-8")).hexdigest(),
+            "execution_verified": False, "authorization_verified": False,
+            "repository_state_read": False, "remote_state_read": False,
+            "other_guards_evaluated": False}
 
 
 def _push_reply(decision: str, code: str) -> dict:
@@ -1487,9 +1536,12 @@ def _push_reply(decision: str, code: str) -> dict:
 def push_policy_main(argv: list) -> int:
     """Strict independent CLI. No doctrine, subprocesses, installation or map credit."""
     try:
-        if len(argv) != 3 or argv[1] not in ("--push-policy", "--check-push-policy"):
+        if len(argv) != 3 or argv[1] not in ("--push-policy", "--check-push-policy", "--explain-push-policy"):
             raise PushPolicyError("arguments")
-        policy = load_push_policy(Path(argv[2]))
+        if argv[1] == "--explain-push-policy":
+            policy, identity = load_push_policy_identity(Path(argv[2]))
+        else:
+            policy = load_push_policy(Path(argv[2]))
         if argv[1] == "--check-push-policy":
             print(json.dumps({"push_policy": {"status": "valid", "version": 1,
                                               "protected_ref_count": len(policy["protected_refs"]),
@@ -1504,7 +1556,11 @@ def push_policy_main(argv: list) -> int:
                 or payload.get("tool_name") != "Bash" or not isinstance(payload.get("tool_input"), dict)
                 or not isinstance(payload["tool_input"].get("command"), str)):
             raise PushPolicyError("input_shape")
-        reason = evaluate_push_policy(payload["tool_input"]["command"], policy)
+        command = payload["tool_input"]["command"]
+        if argv[1] == "--explain-push-policy":
+            print(json.dumps(explain_push_policy(command, policy, identity), sort_keys=True))
+            return 0
+        reason = evaluate_push_policy(command, policy)
         if reason:
             if policy["deny_output"] == "exit2":
                 sys.stderr.write("Safety Core push policy denied: " + reason + "\n")
@@ -1534,7 +1590,7 @@ def main(argv: list) -> None:
 
 
 if __name__ == "__main__":
-    if any(arg.startswith(("--push-policy", "--check-push-policy")) for arg in sys.argv[1:]):
+    if any(arg.startswith(("--push-policy", "--check-push-policy", "--explain-push-policy")) for arg in sys.argv[1:]):
         sys.exit(push_policy_main(sys.argv))
     try:
         main(sys.argv)
