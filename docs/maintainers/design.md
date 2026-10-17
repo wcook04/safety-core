@@ -1,5 +1,10 @@
 # Design
 
+Safety Core turns a project-owned rulebook into instructions, configuration
+checks, a map and selected Claude Code hook responses. It is for people who
+maintain their own coding-agent setup and need to inspect the relationship
+between a rule, the files it governs and the mechanism that supports it.
+
 ## The problem
 
 AI agents now do real work in repositories: they edit code, run migrations, push
@@ -29,7 +34,10 @@ governs and to what enforces it. Compile those local links into everything else:
 - **Map:** one picture of the doctrine and the repository that shows which rules are
   enforced, which are only words, and which places no rule covers.
 
-Coherence comes from local links that can be compiled and checked.
+For example, a test-preservation principle can be routed to test files. The
+builder writes the corresponding path guidance; an edit event can deliver a
+reminder. `explain` and the map show that support as a reminder, rather than
+claiming the tool verified the quality of a test change.
 
 ## The shape
 
@@ -44,9 +52,70 @@ The small command and hook core stays at the root. The viewer and guides have se
 | `docs/guides/agent-setup.md` | what an agent does to adopt a doctrine, and what it reports |
 
 `init` copies the doctrine, `safety.py`, `doctrine.py`, `hooks.py` and the viewer into the target's
-`.doctrine/` folder and wires the hooks into `.claude/settings.json`. Nothing is
-installed. Local state (session records, the built graph, the mistakes log) stays in
+`.doctrine/` folder and wires the ordinary hooks into `.claude/settings.json`.
+There is no global package installation. Local state (session records, the built graph, the mistakes log) stays in
 `.doctrine/` and is ignored by git.
+
+## Inputs, processing and outputs
+
+| Input | Processing | Output and boundary |
+|---|---|---|
+| Project `doctrine.toml`, file inventory and existing instruction files | `load`/`from_dict` validate the rule model; `init` trims unmatched routes and copies the toolkit; `build` writes managed projections | Entry cards, path rules and a graph. Text outside managed regions and unrelated settings are retained. New rules need a matching mechanism to gain runtime enforcement. |
+| Doctrine references, generated files, hook declarations and repository settings | `check` resolves enforcers and event/tool wiring, compares projections and computes effective levels | Text/JSON findings and configured coverage. It does not run an agent or certify the requested task is complete. |
+| Claude Code event JSON and project-local doctrine | The ordinary handler routes reminders, recognizes selected commands, records selected results and compares final claims with records and Git | Context, permission responses or final-claim findings, plus local session records. Host delivery and arbitrary command effects are outside the static report. |
+| Separately supplied push-policy JSON and a Bash event | The opt-in validator and pure analyzer classify supported push text; enforcement and explanation project the same assessment into different protocols | A hook decision or an offline diagnostic, depending on the explicit CLI flag. No push is executed by this path. It is not registered or credited by ordinary adoption. |
+
+The ordinary generator/checker and the optional push handler have separate
+inputs and activation paths. A policy file's existence does not enable a hook.
+
+### Optional push-policy path
+
+`hooks.py --check-push-policy PATH` validates a bounded JSON policy.
+`--explain-push-policy PATH` consumes a bounded synthetic Bash event and reports
+classification, `none`/`ask`/`deny`, and observed policy/source identities.
+`--push-policy PATH` uses the same analyzer for a manually registered additional
+`PreToolUse` guard. The [hook guide](hooks.md#optional-project-specific-push-policy)
+owns the policy format, exact wiring, supported grammar and host protocols.
+
+The policy names literal full refs; supported spelling comparisons are finite
+parser behavior, not semantic understanding of arbitrary shell programs. The
+analyzer reads neither repository nor remote state and runs no event commands.
+An unresolved command remains distinct from a known protected destination even
+when both receive a denial. `none` is absence of a decision by this guard, not a
+grant. Policy hashes identify the validated bytes and normalized supported
+configuration, not authorship, execution or a live host's behavior.
+
+Ordinary `init` copies `hooks.py` but wires only the ordinary event handler.
+The push mode is outside its `CHECKS`/`WIRING` coverage model, so adding it manually
+does not automatically change the map's enforcement totals. The ordinary handler
+fails open on internal errors. The explicit push mode instead refuses malformed
+policy/input and caught internal failures; the host's timeout and settings rules
+still apply. These are distinct error contracts, not a general security boundary.
+
+## Status and evidence
+
+### Usable today
+
+Project adoption, rule generation, static inspection and selected Claude Code
+controls are implemented, as are the separate push-policy validation,
+explanation and enforcement interfaces. The local copy uses Python 3.11+ and
+Git; host installation and accounts are separate requirements.
+
+### Tested
+
+Repository tests and disposable demonstrations cover rule compilation,
+configuration preservation, synthetic hook responses and finite push-policy
+controls. [Contribution reports](../../CONTRIBUTING.md#feedback-contributions)
+retain the scope of an outside Linux fixture report and source feedback. Those reports do not establish live host delivery or independent
+real-project adoption.
+
+### Experimental or unverified
+
+Windows behavior and arbitrary-shell coverage are unverified. Configuration
+coverage is not an acceptance test of an agent's whole task. No independent
+real-project result follows from a synthetic event, a source review or a reported
+fixture pass. The [limits](hooks.md#limits) describe the ordinary handler; the
+optional push mode has its own narrower grammar and activation contract.
 
 ## The model
 
