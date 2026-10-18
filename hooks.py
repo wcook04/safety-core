@@ -752,6 +752,43 @@ def bypass(words: list, runs_hooks: bool) -> str:
     return ""
 
 
+def settings_of(command: str) -> dict:
+    """Environment names each test, commit or push in `command` runs with: {label: {name, ...}}.
+
+    Counts `NAME=value cmd`, `env NAME=value cmd` and an earlier `export NAME=value` in the same command."""
+    found, exported = {}, set()
+    for c in commands(command):
+        w = bare(c["words"])
+        if w[:1] == ["export"]:
+            exported |= {a.split("=", 1)[0] for a in w[1:] if ASSIGN.match(a)}
+            continue
+        if kind_of(c["words"]) in ("test", "git-commit", "git-push"):
+            names = {a.split("=", 1)[0] for a in c["words"][: len(c["words"]) - len(w)] if ASSIGN.match(a)}
+            found.setdefault(label(c["words"]), set()).update(names | exported)
+    return found
+
+
+def retried_with_settings(command: str, receipts: list) -> list:
+    """Checks in `command` that failed earlier this session and now run with a setting the failure did not have.
+
+    [(label, new names, exit of the failure)]: inventing a value for a missing setting can get a check through
+    without the thing it checks being true, which is a way of switching the check off."""
+    failed = {}
+    for row in receipts:
+        for seg in row.get("segments") or []:
+            if seg.get("kind") in ("test", "git-commit", "git-push"):
+                key = seg.get("head")
+                if seg.get("status") == "failed":
+                    failed[key] = (settings_of(str(row.get("command") or "")).get(key, set()), row.get("exit"))
+                elif seg.get("status") == "ok":
+                    failed.pop(key, None)
+    out = []
+    for key, names in settings_of(command).items():
+        if key in failed and names - failed[key][0]:
+            out.append((key, sorted(names - failed[key][0]), failed[key][1]))
+    return out
+
+
 SECRET_SHAPES = (
     ("an AWS access key", r"\b(?:AKIA|ASIA)[0-9A-Z]{16}\b"),
     ("a GitHub token", r"\bgh[pousr]_[A-Za-z0-9]{36,}|\bgithub_pat_[A-Za-z0-9_]{60,}"),
@@ -945,6 +982,21 @@ def bash(ctx: Ctx, out: Out, command: str) -> None:
     if skips:
         out.add("bypass_checks", "Safety Core: " + "; ".join(skips) + ". These hooks are among the checks people "
                 "rely on to oversee changes; if one is wrong, saying so keeps it visible.")
+    receipts = ctx.rows("receipts.jsonl") if ctx.mode("receipts") != "off" else []
+    amends = [c for c in cmds if head_of(c["words"]) == "git" and git_sub(bare(c["words"])[1:])[0] == "commit"
+              and "--amend" in git_sub(bare(c["words"])[1:])[1]]
+    made = any(seg.get("kind") == "git-commit" and seg.get("status") == "ok" for row in receipts for seg in row.get("segments") or [])
+    if amends and ctx.mode("receipts") != "off" and not made:
+        # Recorded 18 Oct 2026: after a refused commit, Haiku amended the project's first commit and reported a new one.
+        head = (git(ctx.cwd, "log", "-1", "--format=%h %s") or "").strip()
+        out.add("irreversible", f"Safety Core: `git commit --amend` replaces the latest commit{f' ({head})' if head else ''}, and this "
+                "session's record holds no commit it made. Amending would rewrite someone else's commit instead of adding a new one.")
+    retries = retried_with_settings(command, receipts) if ctx.mode("receipts") != "off" else []
+    for key, names, code in retries:
+        out.add("bypass_checks", f"Safety Core: `{key}` failed earlier in this session (exit {code}), and this command runs it "
+                f"again with a setting the failed run did not have: {', '.join(names)}. If the value was chosen to get the "
+                "check through, the check passes without testing what it was written to test. A person can say whether "
+                "the setting is right; otherwise report the failure as it is.")
     for where, worktree, untracked in commit_scans if ctx.mode("secrets") != "off" else ():
         found = staged_secrets(where, worktree, untracked)
         if found:

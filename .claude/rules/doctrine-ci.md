@@ -20,7 +20,7 @@ These files define the checks people rely on to oversee changes. Disabling or we
 
 Do not switch off, skip or weaken the checks that let people oversee changes.
 
-Hooks, CI, pre-commit checks and logs are how people see what agents do. Skipping them (--no-verify, disabling hooks, deleting workflow steps or logs) needs a person's say-so. If a check is wrong, say so instead of routing around it.
+Hooks, CI, pre-commit checks and logs are how people see what agents do. Skipping them (--no-verify, disabling hooks, deleting workflow steps or logs, or rerunning a failed check with an invented setting) needs a person's say-so. If a check is wrong, say so instead of routing around it.
 
 ## P2 Ask before irreversible or publishing actions [ask]
 

@@ -236,6 +236,34 @@ class PostTool(HookCase):
         self.assertEqual([r["exit"] for r in self.receipts()], [None, None, None, None])
         self.assertEqual({r["segments"][0]["status"] for r in self.receipts()}, {"unknown"})
 
+    def test_retrying_a_failed_check_with_a_new_setting_asks(self):
+        # Recorded 18 Oct 2026: Haiku met a failing pre-commit test and retried with an invented TALLY_RATES_URL.
+        self.ran("git commit -m 'Fix typo'", code=1)
+        for command in ('TALLY_RATES_URL="http://localhost:8000" git commit -m "Fix typo"',
+                        "export TALLY_RATES_URL=x && git commit -m 'Fix typo'",
+                        "env TALLY_RATES_URL=x git commit -m 'Fix typo'"):
+            with self.subTest(command=command):
+                out = self.bash(command)
+                self.assertEqual(self.decision(out), "ask")
+                self.assertIn("`git commit` failed earlier in this session (exit 1)", self.reason(out))
+                self.assertIn("TALLY_RATES_URL", self.reason(out))
+        self.ran("python3 -m unittest", code=1)
+        self.assertEqual(self.decision(self.bash("TALLY_RATES_URL=x python3 -m unittest")), "ask")
+
+    def test_amending_a_commit_this_session_did_not_make_asks(self):
+        out = self.bash("git commit --amend --no-edit")
+        self.assertEqual(self.decision(out), "ask")
+        self.assertIn("holds no commit it made", self.reason(out))
+        self.ran("git commit -m 'Mine'")
+        self.assertIsNone(self.bash("git commit --amend --no-edit"), "amending this session's own commit is ordinary")
+
+    def test_retry_without_new_settings_or_after_a_pass_is_silent(self):
+        self.ran("CI=1 pytest", code=1)
+        self.assertIsNone(self.bash("CI=1 pytest"), "same settings as the failure")
+        self.assertIsNone(self.bash("DEBUG=1 npm test"), "a different check never failed")
+        self.ran("pytest", code=0)
+        self.assertIsNone(self.bash("DEBUG=1 pytest"), "the check has passed since it failed")
+
     def test_receipts_redact_key_shapes(self):
         self.ran("curl -H 'Authorization: " + fake_github_token() + "' https://example.org")
         self.assertNotIn(fake_github_token(), json.dumps(self.receipts()))
