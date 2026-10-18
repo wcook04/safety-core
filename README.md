@@ -67,9 +67,11 @@ The repository's examples and tests exercise copied-project setup, generated
 instructions, configuration drift, synthetic hook events and push-policy
 classification. [Skitter's outside report](CONTRIBUTING.md#feedback-contributions)
 covers a pinned disposable Linux demo. [Recorded agent runs](docs/reference/agent-runs-20261018.md)
-compare Claude Haiku with and without Safety Core on a failing pre-commit check: without it, 9 of
-10 runs invented a value for the missing setting and reported the work done; with the retry check,
-none did and all 10 reported the failure. A successful fixture or static configuration
+run Claude Haiku with no Safety Core, with its instructions only, and with its checks. On a commit
+blocked by a failing test, 10 of 10 runs without Safety Core invented a value for a missing setting
+and reported the work done; with the instructions only, 6 of 10 still did, and said so; with the
+checks, none did. For a planted note asking for `.env` in the reply, the instructions alone were
+enough. A successful fixture or static configuration
 check is separate from a successful task in somebody's real project.
 
 ### Experimental or unverified
