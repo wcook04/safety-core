@@ -134,6 +134,13 @@ class Ctx:
         found = found or [self.doctrine.principles[i] for i in CHECKS[check]["principles"] if i in self.doctrine.principles]
         return " ".join(f"{p.id} ({p.name}): {p.one}" for p in found)
 
+    def principle_ids(self, check: str) -> list:
+        """The ids `principles` would quote for this check."""
+        if not self.doctrine:
+            return list(CHECKS.get(check, {}).get("principles", []))
+        found = [p.id for p in self.doctrine.principles.values() if any(r.endswith("#" + check) for r in p.enforced_by)]
+        return found or [i for i in CHECKS[check]["principles"] if i in self.doctrine.principles]
+
     def rel(self, path) -> str | None:
         """Path relative to the doctrine root ("." for the root), or None outside it."""
         if not self.root or not path:
@@ -210,8 +217,10 @@ class Out:
 
     def __init__(self, ctx: Ctx):
         self.ctx, self.deny, self.ask, self.context, self.message, self.block, self.cited = ctx, [], [], [], [], [], set()
+        self.decided, self.routes = [], set()  # for decisions.jsonl: what was said, and the routes this call touched
 
-    def add(self, check: str, text: str, cap: str = "", principle: bool = True, fingerprint: str = "") -> None:
+    def add(self, check: str, text: str, cap: str = "", principle: bool = True, fingerprint: str = "",
+            principles: list | None = None, routes: list | None = None) -> None:
         mode, event = self.ctx.mode(check), self.ctx.event
         if mode in ("off", "record"):
             return
@@ -225,12 +234,19 @@ class Out:
             text += f" Principle {cite}"
         if event == "PreToolUse" and mode in ("block", "ask"):
             (self.deny if mode == "block" else self.ask).append(text)
+            decision = "deny" if mode == "block" else "ask"
         elif event == "Stop" and mode == "block":
             self.block.append((fingerprint or text, text))
+            decision = "block"  # emit() records "advise" instead when this block was already used
         elif event == "Stop" or mode == "advise":
             self.message.append(text)  # shown to the person; on Stop it costs no extra agent turn
+            decision = "advise"
         else:
             self.context.append(text)
+            decision = "remind"
+        ids = principles if principles is not None else self.ctx.principle_ids(check)
+        self.decided.append({"check": check, "decision": decision, "principles": list(ids), "routes": routes, "text": text,
+                             "fingerprint": fingerprint or text if decision == "block" else ""})
 
     def emit(self) -> dict | None:
         out, event = {}, self.ctx.event
@@ -251,7 +267,49 @@ class Out:
         if self.message:
             text = "\n".join(self.message)
             out["systemMessage"] = (text if text.startswith("Safety Core") else "Safety Core: " + text)[:9000]
+        try:  # the decision log never changes or prevents the answer above
+            self.log(out)
+        except Exception:
+            pass
         return out or None
+
+    def log(self, out: dict) -> None:
+        """One row in decisions.jsonl per finding this call returned: which check, what it decided, about what."""
+        if not self.decided or self.ctx.config.get("decisions") == "off":
+            return
+        p = self.ctx.payload
+        blocked = out.get("decision") == "block"
+        answer = ((out.get("hookSpecificOutput") or {}).get("permissionDecision")) or ("block" if blocked else None)
+        for d in self.decided:
+            decision = d["decision"]
+            if decision == "block" and not blocked:
+                decision = "advise"  # already blocked once, or Claude was continuing after a stop hook
+            row = {"ts": time.time(), "event": self.ctx.event, "tool": p.get("tool_name") or None, "check": d["check"],
+                   "principles": d["principles"], "decision": decision, "returned": answer,
+                   "label": decision_label(self.ctx), "routes": sorted(d["routes"] if d["routes"] is not None else self.routes),
+                   "said": SECRET_RE.sub("[redacted]", d["text"])[:400]}
+            if p.get("tool_use_id"):
+                row["tool_use_id"] = str(p["tool_use_id"])[:80]
+            self.ctx.append("decisions.jsonl", row)
+
+
+def decision_label(ctx: Ctx) -> str:
+    """A short, redacted name for what a decision was about: the command, the path, or the event."""
+    p, tool = ctx.payload, ctx.payload.get("tool_name") or ""
+    ti = p.get("tool_input") if isinstance(p.get("tool_input"), dict) else {}
+    if tool == "Bash":
+        text = " ".join(str(ti.get("command") or "").split())
+    elif ti.get("file_path") or ti.get("notebook_path"):
+        path = str(ti.get("file_path") or ti.get("notebook_path"))
+        text = ctx.rel(path) or os.path.basename(path)
+    elif ctx.event == "Stop":
+        text = "final message"
+    elif ctx.event == "SessionStart":
+        text = f"session {p.get('source') or 'start'}"
+    else:
+        text = tool or ctx.event
+    text = SECRET_RE.sub("[redacted]", text)
+    return text if len(text) <= 160 else text[:157] + "..."
 
 
 # ----------------------------------------------------------------------------- 2. reading shell commands
@@ -889,17 +947,23 @@ def _route_text(ctx: Ctx, route, rel: str) -> str:
 
 def reminders(ctx: Ctx, out: Out, places: list) -> None:
     """Each matching route's reminder, at most once per session per route (and again after compaction)."""
-    if not ctx.doctrine or ctx.mode("reminders") in ("off", "record"):
+    if not ctx.doctrine:
         return
-    seen, texts = set(), []
+    matched = [route for rel, trigger in places for route in ctx.doctrine.routes_for(rel, trigger)]
+    out.routes.update(route.id for route in matched)  # named in the decision log, delivered or not
+    if ctx.mode("reminders") in ("off", "record"):
+        return
+    seen, texts, sent = set(), [], []
     for rel, trigger in places:
         for route in ctx.doctrine.routes_for(rel, trigger):
             if route.id not in seen:
                 seen.add(route.id)
                 if ctx.once("route-" + route.id):
                     texts.append(_route_text(ctx, route, rel))
+                    sent.append(route)
     if texts:
-        out.add("reminders", "\n\n".join(texts), principle=False)
+        out.add("reminders", "\n\n".join(texts), principle=False, routes=[r.id for r in sent],
+                principles=list(dict.fromkeys(pid for r in sent for pid in r.principles)))
 
 
 def is_rule_file(ctx: Ctx, rel: str) -> bool:
@@ -1038,6 +1102,11 @@ def addressed_lines(texts: list) -> list:
     return [line.strip(" #/*>-\t") for text in texts for line in text.splitlines() if ADDRESSED.search(line)][:3]
 
 
+def _call_id(payload: dict) -> dict:
+    """{"tool_use_id": ...} when Claude Code supplied one, so a trace can join records of the same call."""
+    return {"tool_use_id": str(payload["tool_use_id"])[:80]} if payload.get("tool_use_id") else {}
+
+
 def post_tool(ctx: Ctx, out: Out) -> None:
     p, tool = ctx.payload, ctx.payload.get("tool_name") or ""
     ti = p.get("tool_input") if isinstance(p.get("tool_input"), dict) else {}
@@ -1053,7 +1122,7 @@ def post_tool(ctx: Ctx, out: Out) -> None:
         kinds = [{"git": "other"}.get(s["kind"], s["kind"]) for s in segs]
         ctx.append("receipts.jsonl", {"ts": time.time(), "event": ctx.event, "class": kinds[0] if kinds else "other",
                                       "exit": code, "background": background, "command": SECRET_RE.sub("[redacted]", command)[:300],
-                                      "segments": segs})
+                                      "segments": segs, **_call_id(p)})
         for seg in segs:
             if seg["status"] == "failed" and seg["kind"] != "git" and ctx.once("failed-" + seg["kind"]):
                 out.add("receipts", f"Safety Core recorded that `{seg['head']}` ({seg['kind']}) did not succeed: its command exited "
@@ -1061,7 +1130,11 @@ def post_tool(ctx: Ctx, out: Out) -> None:
     if tool in EDIT_TOOLS and ctx.event == "PostToolUse" and ctx.mode("edit_ledger") != "off":
         rel = ctx.rel(ti.get("file_path") or ti.get("notebook_path") or "")
         if rel not in (None, "."):
-            ctx.append("edits.jsonl", {"ts": time.time(), "tool": tool, "path": rel})
+            ctx.append("edits.jsonl", {"ts": time.time(), "tool": tool, "path": rel, **_call_id(p)})
+    if tool == "Read" and ctx.event == "PostToolUse" and ctx.mode("edit_ledger") != "off":
+        rel = ctx.rel(ti.get("file_path") or "")
+        if rel not in (None, "."):  # files read, for tracing a session; the claim check does not use them
+            ctx.append("reads.jsonl", {"ts": time.time(), "tool": tool, "path": rel, **_call_id(p)})
     if tool in ("Read", "Bash", "Grep") and ctx.event == "PostToolUse":
         where = ctx.rel(ti.get("file_path") or "") if tool == "Read" else None
         lines = [] if where and is_rule_file(ctx, where) else addressed_lines(_strings(p.get("tool_response")))  # rule files speak to agents

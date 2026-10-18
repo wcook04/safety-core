@@ -340,6 +340,18 @@ Everything the hooks record lives in `.doctrine/sessions/<session id>/`:
   background, the command with key shapes replaced by `[redacted]`, and the status of each
   test, build or git command in it: `ok`, `failed`, `masked` or `unknown`.
 - `edits.jsonl`: one line per path changed through Edit, Write, MultiEdit or NotebookEdit.
+- `reads.jsonl`: one line per path read through Read, kept for tracing a session (the claim
+  check does not use it). `edit_ledger = "off"` stops both files.
+- `decisions.jsonl`: one line for each thing the hook said: an ask, a deny, a Stop block, a
+  reminder or a note to the person. Each row holds the time, the event and tool, the check,
+  its principle ids, the decision (`ask`, `deny`, `block`, `remind` or `advise`), what the
+  hook returned for the whole call, a short label of the command or path with key shapes
+  replaced by `[redacted]`, the route ids the call touched, the first 400 characters of the
+  text returned (redacted the same way) and Claude Code's `tool_use_id` when it sent one.
+  A check in `record` or `off` mode says nothing, so it logs nothing; `decisions = "off"` in
+  `[hooks]` stops the log. Writing it can fail without changing the answer.
+  `receipts.jsonl`, `edits.jsonl` and `reads.jsonl` rows also carry the `tool_use_id`, so a
+  trace can tell whether a call that was asked about or denied ran afterwards.
 - `once/`: markers for notes delivered once per session, created atomically so parallel
   tool calls cannot deliver the same note twice.
 - `started` and `last_stop`: when the record began and when the last turn ended, used to
