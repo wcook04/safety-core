@@ -466,8 +466,17 @@ produce too many false alarms.
   misread unusual wording. That is why it blocks only on hard contradictions, and only once.
 - **A subagent's final message is not checked.** The hooks are not wired to SubagentStop.
   A subagent's tool calls still pass through the PreToolUse and PostToolUse hooks.
-- **Failures fail open.** A hook that times out does not block (Claude Code's rule), and an
-  internal error writes one line to stderr and exits 0.
+- **Handler errors and host failures differ.** An exception that reaches the outer
+  handler writes a warning to stderr and exits 0 without a decision. The host's
+  other permission checks still apply. Configuration-load errors are caught
+  separately: routes are off, while built-in checks use any hook settings already
+  loaded, falling back to their default levels when no valid setting is available.
+  Timeout and startup-failure behaviour depends on the host version and settings.
+  The [Claude Code reference](https://code.claude.com/docs/en/hooks#block-the-action-when-a-hook-fails),
+  checked on 18 October 2026, documents `onFailure: "block"` for command and HTTP
+  hooks in v2.1.295 or later. That option does not turn this handler's caught
+  exception and successful exit 0 into a failed hook. Verify the installed host
+  and configuration; a missing hook decision is not permission to run an action.
 - **Platforms.** Tested on macOS. The hooks use only Python and git, so Linux should behave
   the same, but it has not been run there; Windows is untested.
 
