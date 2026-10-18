@@ -46,3 +46,14 @@ assert.match(skillMarkup, /&lt;script&gt;/);
 assert.doesNotMatch(skillMarkup, /<script>/);
 assert.match(skillMarkup, /do not run a workflow/);
 console.log('Map purpose and skill rendering: legacy, discovery and escaping checks passed');
+
+vm.runInContext(between('  function sessionModel(', '  // the label on a principle row') + '\nthis.sessionModel = sessionModel; this.stepList = stepList;', context);
+const sample = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'docs', 'reference', 'agent-runs-20261018-trace-hook.json'), 'utf8'));
+const sess = context.sessionModel(sample);
+assert.equal(sess.steps.length, sample.steps.length);
+assert.deepEqual(Array.from(sess.places.keys()).sort(), sample.touched.places.slice().sort(), 'Touched places come from step files');
+assert.ok(sess.routes.has('route:tests') && sess.routes.get('route:tests').sent.length === 0, 'A read on an edit route sends no reminder');
+assert.deepEqual(Array.from(sess.principles.get('P1'), (e) => e.decision), ['ask'], 'The retry check asked at its step');
+assert.equal(sess.steps.find((st) => st.decisions.some((d) => d.decision === 'ask')).ran, false, 'No record that the asked command ran');
+assert.equal(context.stepList([4, 6]), 'steps 4, 6');
+console.log('Map session trace: places, routes, decisions and not-run checks passed on the recorded example');

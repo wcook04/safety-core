@@ -3,7 +3,8 @@
 The map shows your doctrine and your repository's configuration in one picture: which
 principles a route associates with which parts of the code, what mechanism is configured
 for each principle, and where the configuration differs from what the doctrine declares.
-It shows configuration. It does not show what an agent did.
+It shows configuration. It does not show what an agent did, unless you open a
+[session trace](#session-traces) of what the hooks recorded.
 
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="../img/map-20261015-dark.png">
@@ -54,6 +55,39 @@ route and how many principles, places and matched files it has.
 A principle that no route carries has a hollow end and the label "repo-wide". It
 applies through the entry card, and through a repository-wide check where one is
 configured.
+
+## Session traces
+
+A session trace draws one Claude Code session over the same map: the files it read and
+edited, the routes those files fall under, and what the hooks said and when. Make one from
+a session folder, then open it:
+
+```sh
+python3 .doctrine/safety.py trace .doctrine/sessions/<session id> --out trace.json
+python3 .doctrine/safety.py map --trace trace.json --out trace-map.html --open
+```
+
+`map --serve --trace trace.json --open` does the same on the live map. From this checkout,
+**Recorded example** in the bar above the map (or `viewer/map.html?trace=../docs/reference/agent-runs-20261018-trace-hook.json`
+when the checkout is served, for example with `python3 -m http.server`) opens a real Claude
+Haiku run: the pre-commit test fails, the agent retries `git commit` with an invented
+`TALLY_RATES_URL`, and the check that asks stops it. **Open a session trace** reads any
+trace file.
+
+With a trace open, touched places are ringed and say "read", "edited" or "in a command";
+each touched route says whether its reminder went out ("reminder at step 5", or "no
+reminder sent" when, for example, the route delivers on edits and the file was only read);
+and principles carry what the hooks did with them, such as "asked a person at step 6" or
+"told the agent at step 4". A place with no route shows that only the entry card applied
+there. The side panel lists the steps in order: select one, or use Previous, Next and Play,
+to light only that step's places, routes and principles and read the text the hook
+returned. Escape returns to the whole session; **Back to the plain map** leaves the trace.
+
+The trace shows what the hooks recorded: commands and exit codes, reads and edits, and each
+ask, deny, block or note. It does not show what the model read in its instructions or why it
+chose an action, and "no record that it ran" means only that no receipt exists for that
+call. The trace carries the graph of the configuration when it was made, which the map
+draws while the trace is open. The format is in [trace-schema.md](../reference/trace-schema.md).
 
 ## On a phone
 

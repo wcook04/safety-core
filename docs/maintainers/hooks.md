@@ -357,6 +357,10 @@ Everything the hooks record lives in `.doctrine/sessions/<session id>/`:
 - `started` and `last_stop`: when the record began and when the last turn ended, used to
   spot a mistake logged during the session and to tell this turn's edits from earlier ones.
 
+`doctrine.py trace .doctrine/sessions/<session id>` turns one session's record into ordered
+steps joined to routes, places and principles, and `doctrine.py map --trace` draws it over
+the map ([trace format](../reference/trace-schema.md), [reading it](../guides/map.md#session-traces)).
+
 A `.gitignore` holding `*` keeps the record out of git. Records older than 14 days are
 removed when a session starts.
 
