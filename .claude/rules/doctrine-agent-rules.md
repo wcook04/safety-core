@@ -34,4 +34,4 @@ AGENTS.md and CLAUDE.md regions, path rules and hook settings are built from doc
 
 Do not switch off, skip or weaken the checks that let people oversee changes.
 
-Hooks, CI, pre-commit checks and logs are how people see what agents do. Skipping them (--no-verify, disabling hooks, deleting workflow steps or logs) needs a person's say-so. If a check is wrong, say so instead of routing around it.
+Hooks, CI, pre-commit checks and logs are how people see what agents do. Skipping them (--no-verify, disabling hooks, deleting workflow steps or logs, or rerunning a failed check with an invented setting) needs a person's say-so. If a check is wrong, say so instead of routing around it.

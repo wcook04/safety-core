@@ -6,7 +6,7 @@ Start with the [repository introduction](../README.md) and the
 | Directory | Reader and responsibility |
 |---|---|
 | [guides/](guides/) | Adoption, agent setup and using the rule map. |
-| [reference/](reference/) | Graph format, research foundations and dated host observations. |
+| [reference/](reference/) | Graph format, research foundations, dated host observations and recorded agent runs. |
 | [maintainers/](maintainers/) | Implementation design and hook behaviour, including limits. |
 | [img/](img/) | Captures used by the README; keep their original aspect ratios. |
 

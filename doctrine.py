@@ -13,6 +13,8 @@ is linked and enforced or honestly marked as words, and draws the result as a ma
     python3 doctrine.py explain PATH                  what an agent receives at PATH
     python3 doctrine.py map [--out FILE]              one self-contained HTML file
     python3 doctrine.py map --serve [--port N] [--open]   a live map that redraws as you edit
+    python3 doctrine.py trace .doctrine/sessions/ID [--out FILE]   one session's hook record as steps
+    python3 doctrine.py map --trace FILE [--out FILE | --serve]   that session drawn over the map
     python3 doctrine.py log-error "WHAT" --principle P9 --lesson "RULE"
 
 Standard library only, Python 3.11 or later. The hooks live in hooks.py and the viewer in
@@ -1173,6 +1175,26 @@ def inject(html: str, graph: dict) -> str:
     tag = f'<script id="doctrine-graph" type="application/json">{data}</script>\n'
     return html[:at] + tag + html[at:] if at >= 0 else tag + html
 
+TRACE_TAG = re.compile(r'(<script\b[^>]*\bid="doctrine-trace"[^>]*>)(.*?)(</script>)', re.S | re.I)
+
+def inject_trace(html: str, trace: dict) -> str:
+    """The viewer with a session trace inside its doctrine-trace script tag."""
+    data = json.dumps(trace, ensure_ascii=False).replace("<", "\\u003c")
+    if TRACE_TAG.search(html):
+        return TRACE_TAG.sub(lambda m: m.group(1) + data + m.group(3), html, count=1)
+    at = html.lower().find("</head>")
+    tag = f'<script id="doctrine-trace" type="application/json">{data}</script>\n'
+    return html[:at] + tag + html[at:] if at >= 0 else tag + html
+
+def read_trace(path: str | Path) -> dict:
+    try:
+        trace = json.loads(read_text(Path(path)) or "")
+    except ValueError as exc:
+        raise UsageError(f"{path} is not a trace: {exc}") from None
+    if not isinstance(trace, dict) or trace.get("schema") != TRACE_SCHEMA:
+        raise UsageError(f"{path} is not a {TRACE_SCHEMA} file; make one with: trace .doctrine/sessions/<session id>")
+    return trace
+
 class Live:
     """The map server's state: the latest graph, and a condition that wakes /events streams."""
 
@@ -1221,9 +1243,12 @@ class Live:
             self.closed = True
             self.cond.notify_all()
 
-def make_server(doctrine_path: Path, port: int = 7878, interval: float = 1.0) -> http.server.ThreadingHTTPServer:
-    """A local map server on 127.0.0.1: the viewer at /, /graph.json, and /events (server-sent events)."""
+def make_server(doctrine_path: Path, port: int = 7878, interval: float = 1.0,
+                trace: dict | None = None) -> http.server.ThreadingHTTPServer:
+    """A local map server on 127.0.0.1: the viewer at /, /graph.json, /events (server-sent events)
+    and, when given one, a session trace at /trace.json."""
     live = Live(Path(doctrine_path).resolve(), interval)
+    trace_body = json.dumps(trace, ensure_ascii=False).encode() if trace else None
     live.rebuild()
 
     class Handler(http.server.BaseHTTPRequestHandler):
@@ -1249,6 +1274,8 @@ def make_server(doctrine_path: Path, port: int = 7878, interval: float = 1.0) ->
                 self.send(200, body, "application/json")
             elif route == "/events":
                 self.stream()
+            elif route == "/trace.json" and trace_body:
+                self.send(200, trace_body, "application/json")
             else:
                 self.send(404, b"not found", "text/plain; charset=utf-8")
 
@@ -1283,9 +1310,10 @@ def cmd_map(args: argparse.Namespace) -> int:
     viewer = find_viewer(repo.root)
     if viewer is None:
         raise UsageError("map.html was not found in viewer/, beside doctrine.py or in .doctrine/")
+    trace = read_trace(args.trace) if args.trace else None
     if args.serve:
-        server = make_server(repo.doctrine.path, args.port)
-        url = f"http://127.0.0.1:{server.server_address[1]}/"
+        server = make_server(repo.doctrine.path, args.port, trace=trace)
+        url = f"http://127.0.0.1:{server.server_address[1]}/" + ("?trace=trace.json" if trace else "")
         print(f"Serving the map at {url}; it redraws when doctrine.toml or the repository changes. Ctrl+C stops "
               "it.", flush=True)
         if args.open:
@@ -1300,8 +1328,11 @@ def cmd_map(args: argparse.Namespace) -> int:
         return 0
     graph, _ = build_graph(repo, drift(repo, outputs(repo, rulesync=exported(repo.root))))
     out = Path(args.out or "doctrine-map.html")
-    out.write_text(inject(viewer.read_text(encoding="utf-8"), graph), encoding="utf-8")
+    html = inject(viewer.read_text(encoding="utf-8"), graph)
+    out.write_text(inject_trace(html, trace) if trace else html, encoding="utf-8")
     print(f"Wrote {out} ({out.stat().st_size:,} bytes). Open it in a browser; it needs no server.")
+    if args.open:
+        webbrowser.open(out.resolve().as_uri())
     return 0
 
 def cmd_log_error(args: argparse.Namespace) -> int:
@@ -1317,6 +1348,208 @@ def cmd_log_error(args: argparse.Namespace) -> int:
         fh.write(json.dumps(record, ensure_ascii=False) + "\n")
     print(f"Logged in .doctrine/mistakes.jsonl. Lesson: {args.lesson}")
     return 0
+
+# ---------------------------------------------------------------------------- session traces
+
+TRACE_SCHEMA = "doctrine-map/trace@1"
+TRACE_BOUNDARY = ("Shows what the Safety Core hooks recorded in this session: commands and how they exited, files "
+                  "read and edited, and what the hooks said. It does not show what the model read in its "
+                  "instructions, what it was thinking, or why it chose an action.")
+TRACE_RECORDS = ("receipts.jsonl", "edits.jsonl", "reads.jsonl", "decisions.jsonl")
+REACHED_AGENT = ("remind", "deny", "block")
+"""Decisions whose text went to the agent; `ask` goes to a person, `advise` to the person only."""
+
+def _jsonl(path: Path) -> list[dict]:
+    rows = []
+    for line in (read_text(path) or "").splitlines():
+        try:
+            row = json.loads(line)
+        except ValueError:
+            continue
+        if isinstance(row, dict):
+            rows.append(row)
+    return rows
+
+def _stamp_of(path: Path) -> float | None:
+    try:
+        return float((read_text(path) or "").strip())
+    except ValueError:
+        return None
+
+def _status(segments: list) -> str | None:
+    """The worst status among a receipt's recognised commands: failed, masked, unknown, ok."""
+    found = {s.get("status") for s in segments or [] if isinstance(s, dict)}
+    return next((s for s in ("failed", "masked", "unknown", "ok") if s in found), None)
+
+def build_trace(folder: str | Path, repo: Repo | None = None, include_graph: bool = True) -> dict:
+    """One session's record as ordered steps joined to the rules (doctrine-map/trace@1).
+
+    Reads receipts, edits, reads, decisions and once-markers from `folder`
+    (.doctrine/sessions/<session>/). With `repo`, files gain their routes and map places, and the
+    graph of the configuration at trace time can be embedded so the trace opens on its own."""
+    folder = Path(folder)
+    graph = build_graph(repo)[0] if repo else None
+    hide = []  # absolute local paths never leave the machine in a trace
+    if repo:
+        hide += sorted({str(repo.root), os.path.realpath(repo.root)}, key=len, reverse=True)
+    home = os.path.expanduser("~")
+
+    def clean(text):
+        if not isinstance(text, str):
+            return text
+        for prefix in hide:
+            text = text.replace(prefix + "/", "").replace(prefix, ".")
+        return text.replace(home + "/", "~/").replace(home, "~") if home not in ("", "/") else text
+
+    places = sorted((n["path"] for n in graph["nodes"] if n["kind"] == "place") if graph else (), key=len, reverse=True)
+
+    def place_of(path: str) -> str | None:
+        return next(("place:" + p for p in places if path == p or path.startswith(p + "/")), None)
+
+    def routes_of(path: str) -> list[str]:
+        return ["route:" + r.id for r in repo.doctrine.routes_for(path)] if repo else []
+
+    steps: dict[str, dict] = {}
+    order: list[dict] = []
+
+    def step(key: str | None, ts: float) -> dict:
+        if key and key in steps:
+            s = steps[key]
+            s["ts"] = min(s["ts"], ts)
+            return s
+        s = {"ts": ts, "kind": None, "tool": None, "label": "", "files": [], "decisions": [], "ran": None}
+        if key:
+            steps[key] = s
+        order.append(s)
+        return s
+
+    known = set(repo.files) if repo else set()
+    known |= {f.rsplit("/", i)[0] for f in known for i in range(1, f.count("/") + 1)}  # and their folders
+
+    def named(command: str) -> list[str]:
+        """Repository files and folders a command names, as literal paths."""
+        found = [normalise(t) for t in re.findall(r"[^\s'\"=;|&()<>]+", command)]
+        return list(dict.fromkeys(t for t in found if t in known and t != ".git"))[:8]
+
+    def add_file(s: dict, path: str, how: str) -> None:
+        s["files"].append({"path": clean(path), "how": how, "routes": routes_of(path), "place": place_of(path)})
+
+    for row in _jsonl(folder / "reads.jsonl") + _jsonl(folder / "edits.jsonl"):
+        path, tool = str(row.get("path") or ""), str(row.get("tool") or "")
+        if not path:
+            continue
+        s = step(row.get("tool_use_id"), float(row.get("ts") or 0))
+        s.update(kind="edit" if tool != "Read" else "read", tool=tool, label=clean(path), ran=True)
+        add_file(s, path, "edited" if tool != "Read" else "read")
+    for row in _jsonl(folder / "receipts.jsonl"):
+        s = step(row.get("tool_use_id"), float(row.get("ts") or 0))
+        s.update(kind="command", tool="Bash", label=clean(" ".join(str(row.get("command") or "").split()))[:300],
+                 exit=row.get("exit"), status=_status(row.get("segments")), ran=True,
+                 checks=[{"command": seg.get("head"), "kind": seg.get("kind"), "status": seg.get("status")}
+                         for seg in row.get("segments") or [] if isinstance(seg, dict)])
+        if row.get("background"):
+            s["background"] = True
+        for path in named(s["label"]):
+            add_file(s, path, "named")
+    last_stop = None
+    for row in _jsonl(folder / "decisions.jsonl"):
+        ts, event = float(row.get("ts") or 0), str(row.get("event") or "")
+        key = row.get("tool_use_id")
+        if not key and event in ("Stop", "SessionStart"):  # one step per stop or start, whatever it said
+            key = f"{event}-{ts:.0f}" if not (last_stop and event == "Stop" and ts - last_stop[0] < 3) else last_stop[1]
+            if event == "Stop":
+                last_stop = (ts, key)
+        s = step(key, ts)
+        s["decisions"].append({"event": event, "check": row.get("check"), "decision": row.get("decision"),
+                               "principles": list(row.get("principles") or []),
+                               "routes": ["route:" + r for r in row.get("routes") or []], "said": clean(row.get("said"))})
+        if not s["kind"]:
+            tool = row.get("tool")
+            s["kind"] = {"Stop": "stop", "SessionStart": "session"}.get(event) or (
+                "command" if tool == "Bash" else "edit" if tool in ("Edit", "Write", "MultiEdit", "NotebookEdit")
+                else "read" if tool == "Read" else "tool")
+            s["tool"], s["label"] = tool, clean(row.get("label") or "")
+            if s["kind"] in ("read", "edit") and s["label"]:
+                add_file(s, str(row.get("label")), "asked about" if row.get("decision") in ("ask", "deny") else s["kind"] + "ed")
+            for path in named(s["label"]) if s["kind"] == "command" else ():
+                add_file(s, path, "named")
+    # Reminders recorded only as once-markers (sessions from before decisions.jsonl): the marker's time is when it was sent.
+    sent = {r for s in order for d in s["decisions"] if d["check"] == "reminders" for r in d["routes"]}
+    for marker in sorted((folder / "once").glob("route-*")) if (folder / "once").is_dir() else ():
+        rid = "route:" + marker.name[len("route-"):-11]
+        if rid not in sent:
+            s = step(None, marker.stat().st_mtime)
+            s.update(kind="reminder", label=rid[6:])
+            s["decisions"].append({"event": "PreToolUse", "check": "reminders", "decision": "remind", "principles":
+                                   list(repo.doctrine.routes[rid[6:]].principles) if repo and rid[6:] in repo.doctrine.routes else [],
+                                   "routes": [rid], "said": None, "from": "once-marker"})
+    order.sort(key=lambda s: s["ts"])
+    started = _stamp_of(folder / "started") or (order[0]["ts"] if order else None)
+    out_steps, decisions = [], []
+    for n, s in enumerate(order, 1):
+        asked = [d for d in s["decisions"] if d["decision"] in ("ask", "deny")]
+        if s["ran"] is None and asked and s["kind"] in ("command", "edit", "read"):
+            s["ran"] = False  # asked about or refused, and nothing in the record shows the call ran
+        routes = list(dict.fromkeys([r for f in s["files"] for r in f["routes"]] + [r for d in s["decisions"] for r in d["routes"]]))
+        entry = {"n": n, "at": max(0.0, round(s["ts"] - started, 1)) if started else None, **{k: v for k, v in s.items() if k != "ts"},
+                 "routes": routes, "places": list(dict.fromkeys(f["place"] for f in s["files"] if f["place"]))}
+        out_steps.append(entry)
+        decisions += [dict(d, step=n) for d in s["decisions"]]
+
+    def principles_where(kinds) -> list[str]:
+        return list(dict.fromkeys(p for d in decisions if d["decision"] in kinds for p in d["principles"]))
+
+    files = list(dict.fromkeys(f["path"] for s in out_steps for f in s["files"]))
+    touched_routes = list(dict.fromkeys(r for s in out_steps for r in s["routes"]))
+    on_routes = list(dict.fromkeys(p for r in touched_routes if repo and r[6:] in repo.doctrine.routes
+                                   for p in repo.doctrine.routes[r[6:]].principles))
+    count = lambda kind: sum(1 for d in decisions if d["decision"] == kind)  # noqa: E731
+    trace = {
+        "schema": TRACE_SCHEMA, "generated_at": now(), "session": folder.name,
+        "repository": (graph or {}).get("repository") or {"name": None},
+        "started": started, "ended": _stamp_of(folder / "last_stop"),
+        "records": [name for name in TRACE_RECORDS if (folder / name).is_file()] + (["once/"] if (folder / "once").is_dir() else []),
+        "boundary": TRACE_BOUNDARY,
+        "steps": out_steps,
+        "touched": {"files": files, "places": list(dict.fromkeys(p for s in out_steps for p in s["places"])),
+                    "routes": touched_routes},
+        "principles": {"reached_agent": principles_where(REACHED_AGENT), "asked_person": principles_where(("ask",)),
+                       "told_person": principles_where(("advise",)), "on_touched_routes": on_routes},
+        "checks": sorted({(d["check"], d["decision"]) for d in decisions}),
+        "counts": {"steps": len(out_steps), "commands": sum(1 for s in out_steps if s["kind"] == "command" and s["ran"]),
+                   "failed": sum(1 for s in out_steps if s.get("status") == "failed"),
+                   "edits": sum(1 for s in out_steps if s["kind"] == "edit" and s["ran"]),
+                   "reads": sum(1 for s in out_steps if s["kind"] == "read" and s["ran"]),
+                   "not_run": sum(1 for s in out_steps if s["ran"] is False),
+                   **{kind: count(kind) for kind in ("ask", "deny", "block", "remind", "advise")}},
+    }
+    trace["checks"] = [{"check": c, "decision": d} for c, d in trace["checks"]]
+    if graph and include_graph:
+        trace["graph"] = graph
+    return trace
+
+def cmd_trace(args: argparse.Namespace) -> int:
+    folder = Path(args.session).expanduser()
+    if not folder.is_dir():
+        raise UsageError(f"{args.session} is not a session folder (.doctrine/sessions/<session id>/)")
+    if not any((folder / name).is_file() for name in TRACE_RECORDS) and not (folder / "once").is_dir():
+        raise UsageError(f"{folder} holds no session records ({', '.join(TRACE_RECORDS)})")
+    path = Path(args.doctrine) if args.doctrine else find_doctrine(folder)
+    repo = open_repo(path) if path else None
+    trace = build_trace(folder, repo, include_graph=not args.no_graph)
+    text = json.dumps(trace, ensure_ascii=False, indent=1 if args.out else None) + "\n"
+    if not args.out or args.out == "-":
+        sys.stdout.write(text)
+        return 0
+    out = Path(args.out)
+    out.write_text(text, encoding="utf-8")
+    c = trace["counts"]
+    print(f"Wrote {out}: {plural_s(c['steps'], 'step')}; checks asked {c['ask']}, denied {c['deny']} and blocked "
+          f"{c['block']} times, and sent {plural_s(c['remind'], 'note')} to the agent. Draw it with: map --trace {out}")
+    return 0
+
+def plural_s(n: int, word: str) -> str:
+    return f"{n} {word}{'' if n == 1 else 's'}"
 
 
 # =========================================================================== 7. command line
@@ -1341,13 +1574,18 @@ def main(argv: list[str] | None = None, *, prog: str = "doctrine.py") -> int:
     p.add_argument("--serve", action="store_true", help="serve a live map that redraws as you edit")
     p.add_argument("--port", type=int, default=7878)
     p.add_argument("--open", action="store_true", help="open the map in a browser")
+    p.add_argument("--trace", help="a session trace from `trace` to open over the map")
+    p = sub.add_parser("trace", parents=[common], help="one session's hook record as steps over the map")
+    p.add_argument("session", help="session folder: .doctrine/sessions/<session id>/")
+    p.add_argument("--out", help="output file (default: standard output)")
+    p.add_argument("--no-graph", action="store_true", help="leave out the map graph the trace otherwise carries")
     p = sub.add_parser("log-error", parents=[common], help="record a mistake and the lesson it teaches")
     p.add_argument("what", help="what happened")
     p.add_argument("--principle", action="append", default=[], help="principle it broke (repeatable)")
     p.add_argument("--lesson", required=True, help="the rule learned")
     args = parser.parse_args(argv)
     commands = {"init": cmd_init, "build": cmd_build, "check": cmd_check, "explain": cmd_explain,
-                "map": cmd_map, "log-error": cmd_log_error}
+                "map": cmd_map, "trace": cmd_trace, "log-error": cmd_log_error}
     try:
         return commands[args.command](args)
     except DoctrineError as exc:

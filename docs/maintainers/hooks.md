@@ -48,12 +48,13 @@ check: a principle whose `enforced_by` names it (any reference ending in `#<chec
 | `rule_files` | PreToolUse | ask | P15 | Asks before an Edit or Write to a rule file, and before a shell command writes one (a redirection, `tee`, `sed -i`, `cp` or `mv` onto it, or `rm`). Rule files are the paths of the `agent-rules` route (or `AGENTS.md`, `CLAUDE.md`, `.claude/**` and `.cursor/**` when there is no such route), plus the doctrine itself and everything in `.doctrine/`. `doctrine.py build` writes them without asking, because it writes through Python rather than a shell redirection. |
 | `masked_status` | PreToolUse | remind | P5 | Notes when a test, build or git command's exit status would not reach the shell (see the exit-status model below). The first note in a session explains how to keep the status; later ones are one line. |
 | `irreversible` | PreToolUse | ask | P2 | Asks before the commands in "The built-in guard" below, naming what each will do. |
-| `bypass_checks` | PreToolUse | ask | P1 | Asks before a command that skips or switches off the hooks that run on commit, push and merge: `--no-verify` on `git commit`, `push` or `merge`, `git commit -n` (read the way git reads short options, so `-m -n` is a message), `HUSKY=0`, `SKIP=` alongside a commit or a pre-commit run, setting or unsetting `core.hooksPath` (including `git -c core.hooksPath=...`), and `pre-commit uninstall`. Mentions such as `grep -- --no-verify` or a commit message containing the words are left alone. |
+| `bypass_checks` | PreToolUse | ask | P1 | Asks before a command that skips or switches off the hooks that run on commit, push and merge: `--no-verify` on `git commit`, `push` or `merge`, `git commit -n` (read the way git reads short options, so `-m -n` is a message), `HUSKY=0`, `SKIP=` alongside a commit or a pre-commit run, setting or unsetting `core.hooksPath` (including `git -c core.hooksPath=...`), and `pre-commit uninstall`. Mentions such as `grep -- --no-verify` or a commit message containing the words are left alone. It also asks when a test, `git commit` or `git push` that failed earlier in the session runs again with an environment setting the failed run did not have (`NAME=value cmd`, `env NAME=value cmd`, or an earlier `export` in the same command): an invented value can get a check through without the checked thing being true. A pass of that check in between clears it. Settings exported in an earlier, separate command are not seen. |
 | `secrets` | PreToolUse | block | P11 | Blocks a `git commit` whose changes hold a key-shaped value or a `.env` file, naming the file and line but never the value. Asks before an Edit or Write whose new content holds a key shape, unless git ignores the file. |
 | `secret_reads` | PreToolUse | off | P11 | Optional check on every Read matched by the configured `secrets` route's read paths. Set to `ask` for approval or `block` to deny. Does not inspect contents or share reminder deduplication. |
 | `receipts` | PostToolUse | remind | P6 | Records every shell command and how it exited. The first time a test, build, commit or push fails in a session, notes that the end-of-turn check will compare claims with this record. |
 | `edit_ledger` | PostToolUse | record | P6 | Records each path changed through Edit, Write, MultiEdit or NotebookEdit. |
-| `untrusted_content` | PostToolUse | remind | P12 | After WebFetch, WebSearch or any tool whose name contains "fetch" or "browse", notes once per tool per session that the fetched text did not come from the person. |
+| `untrusted_content` | PostToolUse | remind | P12 | After WebFetch, WebSearch or any tool whose name contains "fetch" or "browse", notes once per tool per session that the fetched text did not come from the person. After a Read, Bash or Grep whose output contains a line addressed to AI agents ("Note for AI coding assistants: ...", "ignore previous instructions"), quotes that line once and notes that it came from the repository, not the person. Rule files such as `AGENTS.md` are skipped, because speaking to agents is their job. |
+| `secret_in_message` | Stop | block | P11 | Blocks once when the final message holds a key-shaped value, naming the shape but never the value, and asks for it to be taken out and reported as exposed. The message has already been shown by then, so this is a backstop that gets the exposure reported; it does not count toward P11's enforced coverage. |
 | `unsupported_claim` | Stop | block | P6 | Compares the final message's claims with the record and git (see "The claim check"). Blocks once on a hard contradiction; softer findings go to the person. |
 | `permission_gate` | Stop | advise | P3 | Tells the person when the final message asks to go on ("should I proceed?") without naming an irreversible step, a cost or an open question. |
 | `dirty_tree` | Stop | advise | P4 | Tells the person when files edited during the turn have uncommitted changes the final message does not mention. |
@@ -339,10 +340,26 @@ Everything the hooks record lives in `.doctrine/sessions/<session id>/`:
   background, the command with key shapes replaced by `[redacted]`, and the status of each
   test, build or git command in it: `ok`, `failed`, `masked` or `unknown`.
 - `edits.jsonl`: one line per path changed through Edit, Write, MultiEdit or NotebookEdit.
+- `reads.jsonl`: one line per path read through Read, kept for tracing a session (the claim
+  check does not use it). `edit_ledger = "off"` stops both files.
+- `decisions.jsonl`: one line for each thing the hook said: an ask, a deny, a Stop block, a
+  reminder or a note to the person. Each row holds the time, the event and tool, the check,
+  its principle ids, the decision (`ask`, `deny`, `block`, `remind` or `advise`), what the
+  hook returned for the whole call, a short label of the command or path with key shapes
+  replaced by `[redacted]`, the route ids the call touched, the first 400 characters of the
+  text returned (redacted the same way) and Claude Code's `tool_use_id` when it sent one.
+  A check in `record` or `off` mode says nothing, so it logs nothing; `decisions = "off"` in
+  `[hooks]` stops the log. Writing it can fail without changing the answer.
+  `receipts.jsonl`, `edits.jsonl` and `reads.jsonl` rows also carry the `tool_use_id`, so a
+  trace can tell whether a call that was asked about or denied ran afterwards.
 - `once/`: markers for notes delivered once per session, created atomically so parallel
   tool calls cannot deliver the same note twice.
 - `started` and `last_stop`: when the record began and when the last turn ended, used to
   spot a mistake logged during the session and to tell this turn's edits from earlier ones.
+
+`doctrine.py trace .doctrine/sessions/<session id>` turns one session's record into ordered
+steps joined to routes, places and principles, and `doctrine.py map --trace` draws it over
+the map ([trace format](../reference/trace-schema.md), [reading it](../guides/map.md#session-traces)).
 
 A `.gitignore` holding `*` keeps the record out of git. Records older than 14 days are
 removed when a session starts.
@@ -424,6 +441,8 @@ The irreversible check is a floor, not full coverage. It asks before:
 - force pushes, including `--force-with-lease`, `--mirror` and `+refspec`, and pushes that
   delete remote branches or tags;
 - `git reset --hard`, `git branch -D`, and `git clean` with `-f`;
+- `git commit --amend` when this session's record holds no commit the session made, so the amend
+  would rewrite someone else's commit;
 - recursive `rm` of the filesystem root, the home directory, the repository root (or
   everything in it, or its `.git`), or any path outside the project except below the
   system's temporary directories;
@@ -466,8 +485,17 @@ produce too many false alarms.
   misread unusual wording. That is why it blocks only on hard contradictions, and only once.
 - **A subagent's final message is not checked.** The hooks are not wired to SubagentStop.
   A subagent's tool calls still pass through the PreToolUse and PostToolUse hooks.
-- **Failures fail open.** A hook that times out does not block (Claude Code's rule), and an
-  internal error writes one line to stderr and exits 0.
+- **Handler errors and host failures differ.** An exception that reaches the outer
+  handler writes a warning to stderr and exits 0 without a decision. The host's
+  other permission checks still apply. Configuration-load errors are caught
+  separately: routes are off, while built-in checks use any hook settings already
+  loaded, falling back to their default levels when no valid setting is available.
+  Timeout and startup-failure behaviour depends on the host version and settings.
+  The [Claude Code reference](https://code.claude.com/docs/en/hooks#block-the-action-when-a-hook-fails),
+  checked on 18 October 2026, documents `onFailure: "block"` for command and HTTP
+  hooks in v2.1.295 or later. That option does not turn this handler's caught
+  exception and successful exit 0 into a failed hook. Verify the installed host
+  and configuration; a missing hook decision is not permission to run an action.
 - **Platforms.** Tested on macOS. The hooks use only Python and git, so Linux should behave
   the same, but it has not been run there; Windows is untested.
 
