@@ -271,8 +271,8 @@ detection. See [hook details and limits](docs/maintainers/hooks.md).
 
 | Film | Status | What it introduces |
 |---|---|---|
-| [Introduction](https://www.youtube.com/watch?v=uO2lbstEH9M) | Public | The wider Plectis project and its tools for inspecting agent work. |
-| [Safety Core walkthrough](https://www.youtube.com/watch?v=CY4A1aEPCGc) | Public | Following a rule to files, reading its configured checks and changing a hook mode. |
+| [Introduction (v2)](https://www.youtube.com/watch?v=Ut9068O-HGU) | Public | The wider Plectis project and its tools for inspecting agent work. |
+| [Safety Core walkthrough](https://www.youtube.com/watch?v=qCq4_YLYJbE) | Public | A small test in which an agent used a made-up setting to commit after a test failed. |
 
 Both films are public on YouTube.
 
