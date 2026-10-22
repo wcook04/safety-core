@@ -5,16 +5,16 @@ guidance and selected checks for Claude Code. Edit the rules in one TOML file,
 rebuild, then use the CLI or map to inspect which files and checks each rule
 connects to.
 
+[Watch the experiment](https://www.youtube.com/watch?v=oN4ZaCWqfhY) ·
+[Try the checks](#try-the-checks-without-an-agent) ·
+[Copy into a project](#what-happens-after-cloning) ·
+[Documentation](docs/README.md) · [Source map](#repository-map)
+
 A rule such as “preserve meaningful tests” can produce an editing reminder.
 That reminder cannot tell whether an edit preserved a test's meaning. Safety
 Core makes the distinction visible: some rules are instructions; some also have
 an executable check. Codex and other agents can read the instructions, but the
 runtime hooks described here run in Claude Code.
-
-[Watch the experiment](https://www.youtube.com/watch?v=oN4ZaCWqfhY) ·
-[Try the checks](#try-the-checks-without-an-agent) ·
-[Copy into a project](#what-happens-after-cloning) ·
-[Documentation](docs/README.md) · [Source map](#repository-map)
 
 ## Try the checks without an agent
 
