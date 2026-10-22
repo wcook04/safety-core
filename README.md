@@ -12,9 +12,9 @@ an executable check. Codex and other agents can read the instructions, but the
 runtime hooks described here run in Claude Code.
 
 [Watch the experiment](https://www.youtube.com/watch?v=oN4ZaCWqfhY) ·
-[Plectis introduction](https://www.youtube.com/watch?v=U1z2-XaLe_w) ·
-[Plectis website](https://wcook04.github.io/plectis/) ·
-[Documentation](docs/README.md) · [Copy into a project](#what-happens-after-cloning)
+[Try the checks](#try-the-checks-without-an-agent) ·
+[Copy into a project](#what-happens-after-cloning) ·
+[Documentation](docs/README.md) · [Source map](#repository-map)
 
 ## Try the checks without an agent
 
@@ -78,12 +78,7 @@ To see one of these runs on the map, step by step, with the check that stopped i
 `python3 safety.py map --trace docs/reference/agent-runs-20261018-trace-hook.json --out /tmp/trace-map.html --open`
 ([how traces work](docs/guides/map.md)).
 
-[Plectis website](https://wcook04.github.io/plectis/) ·
-[Get started](#what-happens-after-cloning) · [Documentation](docs/README.md) ·
-[Agent skill](skills/safety-core/SKILL.md) · [Architecture](docs/maintainers/design.md) ·
-[Videos](#videos-and-related-projects)
-
-The website is agent-readable through its [navigation guide](https://wcook04.github.io/plectis/llms.txt).
+The Plectis website is agent-readable through its [navigation guide](https://wcook04.github.io/plectis/llms.txt).
 For this repository's map, the [graph schema](docs/reference/graph-schema.md) and
 [sample JSON](examples/graph.sample.json) expose the configured relationships without a browser.
 
@@ -299,12 +294,18 @@ detection. See [hook details and limits](docs/maintainers/hooks.md).
 
 ## Videos and related projects
 
-| Film | Status | What it introduces |
-|---|---|---|
-| [Introduction](https://www.youtube.com/watch?v=U1z2-XaLe_w) | Public | The wider Plectis project and its tools for inspecting agent work. |
-| [Safety Core walkthrough](https://www.youtube.com/watch?v=oN4ZaCWqfhY) | Public | A small test in which an agent used a made-up setting to commit after a test failed. |
+The [Safety Core video](https://www.youtube.com/watch?v=oN4ZaCWqfhY)
+starts with the invented-setting workaround, then explains the rulebook,
+the experiment and the record of one agent's actions.
 
-Both films are public on YouTube.
+| In the video | Inspect it here |
+|---|---|
+| Which rules apply to a file, and which have an executable check | [Rulebook](doctrine.toml), [map guide](docs/guides/map.md) and [check coverage](#what-the-checks-actually-cover) |
+| Compare no Safety Core, written rules, and rules with checks | [Experiment, saved runs and limits](docs/reference/agent-runs-20261018.md) |
+| Follow the attempted retry and approval request | [Recorded trace](docs/reference/agent-runs-20261018-trace-hook.json) and the [command above](#measured-does-a-written-rule-change-what-an-agent-does) |
+
+The [Plectis introduction](https://www.youtube.com/watch?v=U1z2-XaLe_w)
+explains how this work relates to the other projects.
 
 ### Where Safety Core fits
 
@@ -314,10 +315,11 @@ the related projects below for committing selected patches, other Python
 experiments, or the mathematical research.
 
 - [One Checkout](https://github.com/wcook04/one-checkout) helps agents commit one reviewed patch while preserving other unfinished edits.
+- [Plectis Zenith](https://github.com/wcook04/plectis-zenith) tests whether showing an AI tester its earlier misses helps it find bugs in new programs. That experiment is separate from Safety Core's rules-and-checks comparison.
 - [Plectis toolkit](https://github.com/wcook04/plectis) contains earlier Python components and worked examples; its [software map](https://wcook04.github.io/plectis/docs/system-map.html) explains their roles.
 - [Plectis Erdős](https://github.com/wcook04/plectis-erdos) publishes the mathematical research, proofs and open questions; [read the papers](https://wcook04.github.io/plectis/maths/).
 
-Explore the [research corpus](https://github.com/wcook04/plectis-erdos) and the [Plectis website](https://wcook04.github.io/plectis/).
+The [Plectis website](https://wcook04.github.io/plectis/) collects the projects and their videos.
 
 For fixes and rule proposals, see [Contributing](CONTRIBUTING.md). Use the [private reporting route](SECURITY.md) for vulnerabilities.
 
