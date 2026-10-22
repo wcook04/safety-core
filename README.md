@@ -11,8 +11,8 @@ Core makes the distinction visible: some rules are instructions; some also have
 an executable check. Codex and other agents can read the instructions, but the
 runtime hooks described here run in Claude Code.
 
-[Watch the experiment](https://www.youtube.com/watch?v=xp-CYdvPFps) ·
-[Plectis introduction](https://www.youtube.com/watch?v=K87Qk0W7-lk) ·
+[Watch the experiment](https://www.youtube.com/watch?v=oN4ZaCWqfhY) ·
+[Plectis introduction](https://www.youtube.com/watch?v=U1z2-XaLe_w) ·
 [Plectis website](https://wcook04.github.io/plectis/) ·
 [Documentation](docs/README.md) · [Copy into a project](#what-happens-after-cloning)
 
@@ -301,8 +301,8 @@ detection. See [hook details and limits](docs/maintainers/hooks.md).
 
 | Film | Status | What it introduces |
 |---|---|---|
-| [Introduction (v2)](https://www.youtube.com/watch?v=K87Qk0W7-lk) | Public | The wider Plectis project and its tools for inspecting agent work. |
-| [Safety Core walkthrough](https://www.youtube.com/watch?v=xp-CYdvPFps) | Public | A small test in which an agent used a made-up setting to commit after a test failed. |
+| [Introduction](https://www.youtube.com/watch?v=U1z2-XaLe_w) | Public | The wider Plectis project and its tools for inspecting agent work. |
+| [Safety Core walkthrough](https://www.youtube.com/watch?v=oN4ZaCWqfhY) | Public | A small test in which an agent used a made-up setting to commit after a test failed. |
 
 Both films are public on YouTube.
 
