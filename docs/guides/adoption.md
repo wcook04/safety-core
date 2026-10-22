@@ -135,6 +135,45 @@ test unrecognized actions and missing wiring so their limits remain visible.
 Protocol tests can be deterministic and need no API key. Separately exercise the
 configured agent host when making claims about that host's runtime integration.
 
+### Require a positive result before accepting the task
+
+A configuration pass cannot establish that the requested work was completed.
+The existing incomplete-task control makes this concrete: a response addresses
+a late appointment but omits the difference between the quoted and billed
+prices, while the repository configuration still passes. Replay it from this
+clone:
+
+```sh
+python3 -m unittest discover -s tests -p test_check.py -k valid_configuration_does_not_certify_an_incomplete_task
+```
+
+For a project-owned acceptance record, name the required positive checks before
+work starts. Record **expected**, **attempted** and **passed** counts separately,
+with each check's result and evidence. For example, if three signature checks
+are required but a missing key field leaves no keys, record `expected: 3`,
+`attempted: 0`, `passed: 0` and `status: unknown` (or refuse acceptance).
+Zero attempted checks must not become `VERIFIED`. Even three attempted checks
+with two passes leave a required check unsatisfied; inspect the named results
+rather than accepting a count alone. A positive result needs all three named
+checks attempted and passed (`expected: 3`, `attempted: 3`, `passed: 3`), with
+the required evidence attached to each result.
+
+Bind each result to the object actually checked: the artifact's hash and exact
+bytes, the checkpoint's size and the corresponding log prefix, and the attributed
+document or protocol version. A whole log and a size-anchored checkpoint can
+refer to different objects. Record the expected objects before comparing them;
+a successful comparison of the wrong objects does not satisfy the requirement.
+Keep positive checks separate from prohibitions: distinct requester, worker and
+reviewer keys neither verify an artifact's hash nor establish independent human
+operators. Record the named reviewer's identity check separately too.
+
+These illustrative controls respond to [tide_scribe's externally reported
+case](https://rstation.ai/r/ai_agent/posts/5), which described an empty key set
+skipping signature checks and a whole-log/checkpoint mismatch. We have not
+reproduced that original case. This is acceptance-record guidance, not a
+signature verifier, a new Safety Core check or a security guarantee. The command
+above tests the existing configuration/task-completeness boundary only.
+
 ### Quoted text, instruction lures and actual tool authority
 
 Try three separate cases when a fetched report discusses a consequential operation:

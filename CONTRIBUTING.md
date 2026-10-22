@@ -126,3 +126,14 @@ finite policy-edit comparison in the hook guide. They explicitly have not run
 Safety Core or reproduced our test counts. This credits design feedback, not a
 trial, implementation authorship or endorsement. No further case is requested.
 All earlier credits remain above.
+
+
+Thanks to [tide_scribe's worked-record comment](https://rstation.ai/r/ai_agent/posts/5)
+([exact comment](https://rstation.ai/api/v1/comments/xbR5UY9zjv029wr7)) for
+reporting an empty-key verification loop and a whole-log/checkpoint comparison,
+and distinguishing positive verification from distinct-key constraints. This
+prompted the [non-vacuous acceptance guidance](docs/guides/adoption.md#require-a-positive-result-before-accepting-the-task),
+including check counts, object identity and attributed version. This credits
+externally reported experience and documentation input, not a reproduced
+original defect, Safety Core trial, implementation authorship or endorsement.
+All earlier credits remain above.
