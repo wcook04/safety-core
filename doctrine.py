@@ -422,7 +422,7 @@ def ordinary_hook_command(command: str) -> bool:
     return len(words) == 1 and (words[0] == ".doctrine/hooks.py" or words[0].endswith("/.doctrine/hooks.py"))
 
 def hooks_wired(settings: dict, event: str | None = None, tools: Iterable[str] = ()) -> bool:
-    """Recognised event wiring, with every required tool covered by its matchers."""
+    """Unconditional shell-form wiring, with required tools covered by its matchers."""
     if settings.get("disableAllHooks") is True:
         return False
     plugins = settings.get("enabledPlugins")
@@ -437,7 +437,8 @@ def hooks_wired(settings: dict, event: str | None = None, tools: Iterable[str] =
             if not isinstance(group, dict):
                 continue
             if any(isinstance(hook, dict) and hook.get("type", "command") == "command"
-                   and ordinary_hook_command(hook.get("command", "")) and not hook.get("args")
+                   and "if" not in hook and "args" not in hook
+                   and ordinary_hook_command(hook.get("command", ""))
                    for hook in group.get("hooks") or ()):
                 patterns.append(group.get("matcher", ""))
 

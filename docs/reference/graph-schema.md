@@ -88,7 +88,13 @@ principle's id; `unrouted_sensitive` carries both the place's node id and its pa
 Settings wiring recognises direct ordinary `.doctrine/hooks.py` commands, either
 as an executable script or through Python with simple interpreter flags. Printing
 or mentioning that path, shell wrappers and alternate handler arguments receive
-no ordinary-hook credit. The existing enabled-plugin recognition is separate.
+no ordinary-hook credit. A handler with `if` or `args` also receives no automatic
+ordinary credit: this recogniser models unconditional shell form, while `if`
+limits delivery and the presence of `args`, including an empty list, selects
+exec form without shell tokenisation. See the [Claude Code hook fields](https://code.claude.com/docs/en/hooks#hook-handler-fields).
+Compatible custom predicates and valid exec-form hooks need separate modelling;
+this finite check does not classify them as universally ineffective.
+The existing enabled-plugin recognition is separate.
 This finite configuration check does not establish that a command exists at the
 expanded path or that the host delivered an event.
 

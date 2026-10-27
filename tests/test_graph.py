@@ -137,6 +137,22 @@ class Graph(RepoTestCase):
         self.assertEqual(graph["coverage"]["enforced_beyond_words"], 0)
         self.assertTrue(any("not wired" in note for note in notes))
 
+    def test_conditional_and_exec_forms_do_not_get_unconditional_shell_wiring_credit(self):
+        for extra in ({"if": "Bash(npm test)"}, {"if": ""}, {"args": []}, {"args": [".doctrine/hooks.py"]}):
+            with self.subTest(extra=extra):
+                hook = {"type": "command", "command": doctrine.HOOK_COMMAND, **extra}
+                settings = {"hooks": {"PreToolUse": [{"matcher": "Bash", "hooks": [hook]}]}}
+                self.assertFalse(doctrine.hooks_wired(settings, "PreToolUse", ["Bash"]))
+                root = self.make_repo(DEMO_FILES)
+                (root / ".claude/settings.json").write_text(json.dumps(settings))
+                graph, notes, nodes = self.graph(root)
+                self.assertEqual(nodes["P1"]["effective"], "remind")
+                self.assertEqual(graph["coverage"]["enforced_beyond_words"], 0)
+                self.assertTrue(any("not wired" in note for note in notes))
+                settings["hooks"]["PreToolUse"][0]["hooks"].append(
+                    {"type": "command", "command": doctrine.HOOK_COMMAND})
+                self.assertTrue(doctrine.hooks_wired(settings, "PreToolUse", ["Bash"]))
+
     def test_optional_secret_read_coverage_requires_opt_in_and_read_wiring(self):
         source = REFERENCE.read_text().replace('enforced_by = ["hook:pre_tool#secrets"]',
                                                 'enforced_by = ["hook:pre_tool#secret_reads"]')
