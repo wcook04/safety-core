@@ -78,7 +78,7 @@ To see one of these runs on the map, step by step, with the check that stopped i
 `python3 safety.py map --trace docs/reference/agent-runs-20261018-trace-hook.json --out /tmp/trace-map.html --open`
 ([how traces work](docs/guides/map.md)).
 
-The Plectis website is agent-readable through its [navigation guide](https://wcook04.github.io/plectis/llms.txt).
+The Plectis website is agent-readable through its [navigation guide](https://wcook04.github.io/practical-formal-verification/llms.txt).
 For this repository's map, the [graph schema](docs/reference/graph-schema.md) and
 [sample JSON](examples/graph.sample.json) expose the configured relationships without a browser.
 
@@ -316,10 +316,10 @@ experiments, or the mathematical research.
 
 - [One Checkout](https://github.com/wcook04/one-checkout) helps agents commit one reviewed patch while preserving other unfinished edits.
 - [Plectis Zenith](https://github.com/wcook04/plectis-zenith) tests whether showing an AI tester its earlier misses helps it find bugs in new programs. That experiment is separate from Safety Core's rules-and-checks comparison.
-- [Plectis toolkit](https://github.com/wcook04/plectis) contains earlier Python components and worked examples; its [software map](https://wcook04.github.io/plectis/docs/system-map.html) explains their roles.
-- [Plectis Erdős](https://github.com/wcook04/plectis-erdos) publishes the mathematical research, proofs and open questions; [read the papers](https://wcook04.github.io/plectis/maths/).
+- [Plectis toolkit](https://github.com/wcook04/practical-formal-verification) contains earlier Python components and worked examples; its [software map](https://wcook04.github.io/practical-formal-verification/docs/system-map.html) explains their roles.
+- [Plectis Erdős](https://github.com/wcook04/plectis-erdos) publishes the mathematical research, proofs and open questions; [read the papers](https://wcook04.github.io/practical-formal-verification/maths/).
 
-The [Plectis website](https://wcook04.github.io/plectis/) collects the projects and their videos.
+The [Plectis website](https://wcook04.github.io/practical-formal-verification/) collects the projects and their videos.
 
 For fixes and rule proposals, see [Contributing](CONTRIBUTING.md). Use the [private reporting route](SECURITY.md) for vulnerabilities.
 
