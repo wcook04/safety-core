@@ -22,7 +22,7 @@ class TraceCase(HookCase):
     """A session recorded through the real hooks, the way Claude Code would call them."""
 
     def call(self, tool: str, tool_use_id: str, code: int | None = 0, **tool_input):
-        """PreToolUse, then the PostToolUse record when the call ran (code None: it did not run)."""
+        """PreToolUse, then a completion record unless code is None (execution unrecorded)."""
         out = hooks.handle(self.payload("PreToolUse", tool_name=tool, tool_use_id=tool_use_id, tool_input=tool_input))
         if code is None:
             return out
@@ -54,13 +54,34 @@ class TraceCase(HookCase):
 
 
 class BuildTrace(TraceCase):
+    def test_ask_or_deny_without_completion_keeps_execution_unknown(self):
+        folder = self.session_folder()
+        folder.mkdir(parents=True, exist_ok=True)
+        rows = [dict(ts=1.0 + i, event="PreToolUse", tool=tool, tool_use_id=f"call-{i}",
+                     check="example", decision=decision, label="example", principles=[], routes=[])
+                for i, (tool, decision) in enumerate((
+                    ("Bash", "ask"), ("Bash", "deny"), ("Read", "ask"), ("Edit", "deny")))]
+        (folder / "decisions.jsonl").write_text("".join(json.dumps(row) + "\n" for row in rows))
+        trace = self.trace()
+        self.assertEqual([s["ran"] for s in trace["steps"]], [None] * 4)
+        self.assertEqual(trace["counts"]["execution_unknown"], 4)
+        self.assertEqual(trace["counts"]["not_run"], 0)
+        self.assertEqual((trace["counts"]["ask"], trace["counts"]["deny"]), (2, 2))
+
+        receipt = dict(ts=5.0, tool_use_id="call-0", command="example", exit=0, segments=[])
+        (folder / "receipts.jsonl").write_text(json.dumps(receipt) + "\n")
+        trace = self.trace()
+        self.assertTrue(trace["steps"][0]["ran"])
+        self.assertEqual(trace["counts"]["commands"], 1)
+        self.assertEqual(trace["counts"]["execution_unknown"], 3)
+
     def test_steps_follow_the_session_and_join_records_of_one_call(self):
         self.record_the_invented_setting_session()
         t = self.trace()
         self.assertEqual(t["schema"], "doctrine-map/trace@1")
         kinds = [(s["kind"], s["ran"]) for s in t["steps"]]
         self.assertEqual(kinds, [("read", True), ("edit", True), ("command", True), ("read", True), ("edit", True),
-                                 ("command", False), ("stop", None)])
+                                 ("command", None), ("stop", None)])
         self.assertEqual([s["n"] for s in t["steps"]], list(range(1, 8)))
         self.assertTrue(all(a["at"] <= b["at"] for a, b in zip(t["steps"], t["steps"][1:])))
         failed = t["steps"][2]
@@ -84,7 +105,8 @@ class BuildTrace(TraceCase):
         self.assertIn("route:tests", t["touched"]["routes"])
         self.assertIn("P7", t["principles"]["reached_agent"])
         self.assertEqual(t["principles"]["asked_person"], ["P1"])
-        self.assertEqual(t["counts"]["not_run"], 1)
+        self.assertEqual(t["counts"]["not_run"], 0)
+        self.assertEqual(t["counts"]["execution_unknown"], 1)
         self.assertEqual(t["counts"]["ask"], 1)
 
     def test_no_absolute_local_path_or_secret_leaves_the_machine(self):

@@ -106,6 +106,37 @@ class Graph(RepoTestCase):
         settings["hooks"]["PreToolUse"][1]["hooks"] = [own]
         self.assertTrue(doctrine.hooks_wired(settings, "PreToolUse", ["Bash", "Edit", "Write"]))
 
+    def test_only_direct_ordinary_hook_invocations_receive_wiring_credit(self):
+        for command, expected in (
+            (doctrine.HOOK_COMMAND, True),
+            ('python3 "/project with spaces/.doctrine/hooks.py"', True),
+            ('/usr/bin/python3.12 -u .doctrine/hooks.py', True),
+            ('./.doctrine/hooks.py', True),
+            ("printf '%s\\n' .doctrine/hooks.py", False),
+            ('echo "python3 .doctrine/hooks.py"', False),
+            ("python3 -c 'print(\".doctrine/hooks.py\")'", False),
+            ('python3 .doctrine/hooks.py --push-policy policy.json', False),
+            ('false && python3 .doctrine/hooks.py', False),
+            ('python3 .doctrine/hooks.py || true', False),
+            ('python3 .doctrine/hooks.py.bak', False),
+            ('python3 "$(echo .doctrine/hooks.py)"', False),
+        ):
+            with self.subTest(command=command):
+                settings = {"hooks": {"PreToolUse": [{"matcher": "Bash", "hooks": [
+                    {"type": "command", "command": command}]}]}}
+                self.assertEqual(doctrine.hooks_wired(settings, "PreToolUse", ["Bash"]), expected)
+        settings["hooks"]["PreToolUse"][0]["hooks"] = [{"type": "prompt", "command": doctrine.HOOK_COMMAND}]
+        self.assertFalse(doctrine.hooks_wired(settings, "PreToolUse", ["Bash"]))
+
+    def test_print_only_wiring_does_not_credit_configured_enforcement(self):
+        root = self.make_repo(DEMO_FILES)
+        (root / ".claude/settings.json").write_text(json.dumps({"hooks": {"PreToolUse": [
+            {"matcher": "Bash", "hooks": [{"type": "command", "command": "printf '%s\\n' .doctrine/hooks.py"}]}]}}))
+        graph, notes, nodes = self.graph(root)
+        self.assertEqual(nodes["P1"]["effective"], "remind")
+        self.assertEqual(graph["coverage"]["enforced_beyond_words"], 0)
+        self.assertTrue(any("not wired" in note for note in notes))
+
     def test_optional_secret_read_coverage_requires_opt_in_and_read_wiring(self):
         source = REFERENCE.read_text().replace('enforced_by = ["hook:pre_tool#secrets"]',
                                                 'enforced_by = ["hook:pre_tool#secret_reads"]')

@@ -85,6 +85,13 @@ principle's id; `unrouted_sensitive` carries both the place's node id and its pa
 
 `enforced_beyond_words` counts only `block`, `ask` and `check`. Reminders and advice are not enforcement. Hook source may be `present` with `level: null` when unwired, off or record-only. Hook levels reflect repository event wiring and mode overrides, not an observed host execution.
 
+Settings wiring recognises direct ordinary `.doctrine/hooks.py` commands, either
+as an executable script or through Python with simple interpreter flags. Printing
+or mentioning that path, shell wrappers and alternate handler arguments receive
+no ordinary-hook credit. The existing enabled-plugin recognition is separate.
+This finite configuration check does not establish that a command exists at the
+expanded path or that the host delivered an event.
+
 ## Project purposes and workflow references
 
 These are optional additive `graph@1` fields; older snapshots remain readable.

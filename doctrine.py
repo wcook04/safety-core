@@ -403,6 +403,24 @@ def hook_commands(settings: dict) -> list[str]:
                     found.append(" ".join(str(x) for x in [hook.get("command", ""), *(hook.get("args") or [])]))
     return found
 
+def ordinary_hook_command(command: str) -> bool:
+    """Recognise a direct ordinary hook invocation, not a mention or a shell wrapper.
+
+    This is finite configuration recognition; it does not establish host delivery.
+    Alternate handler arguments (including --push-policy) do not run the ordinary checks.
+    """
+    if not isinstance(command, str) or any(s in command for s in ("`", "$(", "\n", "\r")):
+        return False
+    try:
+        words = shlex.split(command)
+    except ValueError:
+        return False
+    if words and re.fullmatch(r"python(?:3(?:\.\d+)?)?(?:\.exe)?", words[0].replace("\\", "/").rsplit("/", 1)[-1]):
+        words = words[1:]
+        while words and words[0] in ("-B", "-E", "-I", "-s", "-S", "-u"):
+            words = words[1:]
+    return len(words) == 1 and (words[0] == ".doctrine/hooks.py" or words[0].endswith("/.doctrine/hooks.py"))
+
 def hooks_wired(settings: dict, event: str | None = None, tools: Iterable[str] = ()) -> bool:
     """Recognised event wiring, with every required tool covered by its matchers."""
     if settings.get("disableAllHooks") is True:
@@ -418,8 +436,9 @@ def hooks_wired(settings: dict, event: str | None = None, tools: Iterable[str] =
         for group in groups if isinstance(groups, list) else ():
             if not isinstance(group, dict):
                 continue
-            commands = hook_commands({"hooks": {"selected": [group]}})
-            if any("hooks.py" in command and "doctrine" in command for command in commands):
+            if any(isinstance(hook, dict) and hook.get("type", "command") == "command"
+                   and ordinary_hook_command(hook.get("command", "")) and not hook.get("args")
+                   for hook in group.get("hooks") or ()):
                 patterns.append(group.get("matcher", ""))
 
     def matches(pattern, tool):
@@ -1487,9 +1506,8 @@ def build_trace(folder: str | Path, repo: Repo | None = None, include_graph: boo
     started = _stamp_of(folder / "started") or (order[0]["ts"] if order else None)
     out_steps, decisions = [], []
     for n, s in enumerate(order, 1):
-        asked = [d for d in s["decisions"] if d["decision"] in ("ask", "deny")]
-        if s["ran"] is None and asked and s["kind"] in ("command", "edit", "read"):
-            s["ran"] = False  # asked about or refused, and nothing in the record shows the call ran
+        # A permission decision records what the hook said, not whether the host ran the call.
+        # Missing completion records keep execution unknown, including after ask or deny.
         routes = list(dict.fromkeys([r for f in s["files"] for r in f["routes"]] + [r for d in s["decisions"] for r in d["routes"]]))
         entry = {"n": n, "at": max(0.0, round(s["ts"] - started, 1)) if started else None, **{k: v for k, v in s.items() if k != "ts"},
                  "routes": routes, "places": list(dict.fromkeys(f["place"] for f in s["files"] if f["place"]))}
@@ -1521,6 +1539,7 @@ def build_trace(folder: str | Path, repo: Repo | None = None, include_graph: boo
                    "edits": sum(1 for s in out_steps if s["kind"] == "edit" and s["ran"]),
                    "reads": sum(1 for s in out_steps if s["kind"] == "read" and s["ran"]),
                    "not_run": sum(1 for s in out_steps if s["ran"] is False),
+                   "execution_unknown": sum(1 for s in out_steps if s["kind"] in ("command", "edit", "read") and s["ran"] is None),
                    **{kind: count(kind) for kind in ("ask", "deny", "block", "remind", "advise")}},
     }
     trace["checks"] = [{"check": c, "decision": d} for c, d in trace["checks"]]

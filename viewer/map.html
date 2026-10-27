@@ -1250,6 +1250,11 @@ details.entry pre { font: 11.5px/1.55 var(--mono); white-space: pre-wrap; color:
     const stops = (st.decisions || []).filter((d) => d.decision === 'ask' || d.decision === 'deny');
     const refused = stops.some((d) => d.decision === 'deny');
     const failed = (st.checks || []).filter((c) => c.status === 'failed').map((c) => c.command).filter(Boolean);
+    if (['command', 'read', 'edit'].includes(st.kind) && st.ran == null) {
+      const what = { command: 'Command', read: 'Read', edit: 'Edit' }[st.kind];
+      const decision = refused ? 'The hook refused the call; ' : stops.length ? 'Approval requested; ' : '';
+      return { verb: what + ' execution unrecorded', code: st.label, out: decision + 'no completion recorded', bad: false };
+    }
     if (st.kind === 'command') {
       if (st.ran === false) return { verb: refused ? 'Command refused' : 'Command held for approval', code: st.label, out: 'No record that it ran', bad: false };
       const out = st.exit == null ? 'Exit status not recorded' : (st.status === 'failed' ? (failed.length ? failed.map((c) => c).join(', ') + ' failed, ' : 'Failed, ') + 'exit ' + st.exit : 'Exit ' + st.exit);
@@ -1323,6 +1328,7 @@ details.entry pre { font: 11.5px/1.55 var(--mono); white-space: pre-wrap; color:
       '<dt>Steps</dt><dd>' + plural(sess.steps.length, 'step') + '</dd>' +
       '<dt>Commands</dt><dd>' + plural(c.commands || 0, 'ran', 'ran') + (c.failed ? ', ' + c.failed + ' failed' : '') + (c.not_run ? '; ' + c.not_run + ' with no record that ' + (c.not_run === 1 ? 'it' : 'they') + ' ran' : '') + '</dd>' +
       '<dt>Files</dt><dd>' + plural(c.reads || 0, 'read', 'reads') + ', ' + plural(c.edits || 0, 'edit') + '</dd>' +
+      (c.execution_unknown ? '<dt>Execution unrecorded</dt><dd>' + plural(c.execution_unknown, 'tool call') + '</dd>' : '') +
       '<dt>Hooks said</dt><dd>' + [['ask', 'approval request'], ['deny', 'refusal'], ['block', 'stop that kept the agent working', 'stops that kept the agent working'],
         ['remind', 'note to the agent', 'notes to the agent'], ['advise', 'note to the person', 'notes to the person']]
         .filter(([k]) => said(k)).map(([k, one, many]) => plural(said(k), one, many)).join(', ') + (['ask', 'deny', 'block', 'remind', 'advise'].some(said) ? '' : 'nothing') + '</dd></dl>';

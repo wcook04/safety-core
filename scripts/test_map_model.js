@@ -57,3 +57,16 @@ assert.deepEqual(Array.from(sess.principles.get('P1'), (e) => e.decision), ['ask
 assert.equal(sess.steps.find((st) => st.decisions.some((d) => d.decision === 'ask')).ran, false, 'No record that the asked command ran');
 assert.equal(context.stepList([4, 6]), 'steps 4, 6');
 console.log('Map session trace: places, routes, decisions and not-run checks passed on the recorded example');
+
+vm.runInContext(between('  function stepWords(', '  function fileWhy(') + '\nthis.stepWords = stepWords;', context);
+for (const kind of ['command', 'read', 'edit']) {
+  for (const decision of ['ask', 'deny']) {
+    const words = context.stepWords({kind, ran:null, label:'example', decisions:[{decision}]});
+    assert.match(words.verb, /execution unrecorded/);
+    assert.match(words.out, /no completion recorded/);
+    assert.doesNotMatch(words.verb, /Ran|Read a file|Edited/);
+  }
+}
+assert.equal(context.stepWords({kind:'command',ran:true,label:'example',exit:0}).verb, 'Ran a command');
+assert.equal(context.stepWords({kind:'command',ran:false,label:'example',decisions:[{decision:'deny'}]}).verb, 'Command refused', 'Legacy false traces remain readable');
+console.log('Map trace execution wording: unknown, recorded and legacy cases passed');

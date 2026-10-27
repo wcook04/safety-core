@@ -57,14 +57,16 @@ separate steps. Rows from one Stop event within three seconds form one `stop` st
 | `routes`, `places` | route and place ids of those files and of the step's decisions |
 | `exit`, `status`, `checks` | command steps: the exit code Claude Code reported, the worst status of its recognised test, build or git commands (`failed`, `masked`, `unknown`, `ok`) and each of them |
 | `decisions` | `{event, check, decision, principles, routes, said}`: what a hook returned for this call |
-| `ran` | `true` when a receipt, edit or read shows the call ran; `false` when a check asked or denied and no record shows it ran; `null` otherwise |
+| `ran` | `true` when a receipt, edit or read shows the call ran; `null` when execution is unrecorded; historical traces may contain `false` (see below) |
 
 `decision` is one of `ask` (a person was asked), `deny` (the call was refused), `block` (a Stop
 hook kept the agent working), `remind` (a note to the agent) and `advise` (a note to the
 person). `said` is the first 400 characters of the text the hook returned, redacted.
-`ran: false` means only that no receipt, edit or read of that call exists. In a
-non-interactive run Claude Code denies every ask; with a person present, an approved call
-runs and is recorded under the same `tool_use_id`. Read it as "no record that it ran".
+An `ask` or `deny` records what the hook said. Without a receipt, edit or read of
+the same `tool_use_id`, execution stays `null`: the decision does not establish
+what the host did. A later completion record changes that call to `ran: true`.
+Historical traces used `ran: false` for ask/deny without completion. The viewer
+still reads those files, but that value is not proof that the call did not run.
 
 ## Summary fields
 
@@ -75,7 +77,10 @@ runs and is recorded under the same `tool_use_id`. Read it as "no record that it
   reminder was sent: a route delivers on its own triggers (`read`, `edit`, `shell`), once per
   session.
 - `checks`: each check and decision that occurred. `counts`: steps, commands that ran, failed
-  commands, edits, reads, `not_run` steps and each decision.
+  commands, edits, reads, `not_run` steps and each decision. The additive
+  `execution_unknown` count covers command, read and edit steps with `ran: null`;
+  session and Stop events do not contribute. Current trace generation does not
+  infer `not_run` from missing completion records.
 
 ## Privacy
 
