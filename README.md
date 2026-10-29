@@ -5,7 +5,7 @@ guidance and selected checks for Claude Code. Edit the rules in one TOML file,
 rebuild, then use the CLI or map to inspect which files and checks each rule
 connects to.
 
-[Watch the experiment](https://www.youtube.com/watch?v=oN4ZaCWqfhY) ·
+[Watch the experiment](https://www.youtube.com/watch?v=ayl3sOCwaHQ) ·
 [Try the checks](#try-the-checks-without-an-agent) ·
 [Copy into a project](#what-happens-after-cloning) ·
 [Documentation](docs/README.md) · [Source map](#repository-map)
@@ -294,7 +294,7 @@ detection. See [hook details and limits](docs/maintainers/hooks.md).
 
 ## Videos and related projects
 
-The [Safety Core video](https://www.youtube.com/watch?v=oN4ZaCWqfhY)
+The [Safety Core video](https://www.youtube.com/watch?v=ayl3sOCwaHQ)
 starts with the invented-setting workaround, then explains the rulebook,
 the experiment and the record of one agent's actions.
 
@@ -304,7 +304,7 @@ the experiment and the record of one agent's actions.
 | Compare no Safety Core, written rules, and rules with checks | [Experiment, saved runs and limits](docs/reference/agent-runs-20261018.md) |
 | Follow the attempted retry and approval request | [Recorded trace](docs/reference/agent-runs-20261018-trace-hook.json) and the [command above](#measured-does-a-written-rule-change-what-an-agent-does) |
 
-The [Plectis introduction](https://www.youtube.com/watch?v=U1z2-XaLe_w)
+The [Plectis introduction](https://www.youtube.com/watch?v=MBmVMMogXTA)
 explains how this work relates to the other projects.
 
 ### Where Safety Core fits
