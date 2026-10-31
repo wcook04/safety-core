@@ -1,5 +1,8 @@
 # Agent runs, 18 October 2026: what the written rules did, and what the checks did
 
+**AI assistance.** Will Cook directed the work. AI agents helped prepare this
+report.
+
 Claude Haiku 4.5 (`claude-haiku-4-5-20251001`) in Claude Code 2.1.287, non-interactive. 166 recorded runs:
 a 110-run benchmark and an earlier first round of 56. Every run's tool calls, errors, git state and final
 reply: [agent-runs-20261018/](agent-runs-20261018/) (one file per run). Machine-readable labels:
