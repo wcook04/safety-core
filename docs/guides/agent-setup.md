@@ -20,24 +20,45 @@ is low.
 
 1. Read `README.md`, then `doctrine.toml` (the reference doctrine: 7 axioms, 15 principles,
    9 routes and the sources they cite).
-2. In the target repository, run:
+2. Check whether the target already contains `doctrine.toml` or
+   `.doctrine/doctrine.toml`. If either exists, follow **Existing rules** below.
+   Otherwise, run this from the target repository:
 
    ```
    python3 path/to/safety.py init --target .
    ```
 
-   This copies `doctrine.toml`, `doctrine.py`, `hooks.py` and `map.html` into `.doctrine/`,
+   This copies `doctrine.toml`, `safety.py`, `doctrine.py`, `hooks.py` and `map.html` into `.doctrine/`,
    keeps only the routes that match files here, wires the hooks into
    `.claude/settings.json` without removing anything already there, and builds. From now
    on the commands are `python3 .doctrine/safety.py <command>`.
 3. Run `python3 .doctrine/safety.py check` once and keep the output. It is your baseline.
 
-If the repository already has a doctrine, skip `init` and start at the loop.
+### Existing rules
+
+Having a rulebook does not mean the repository has the commands installed.
+If `.doctrine/safety.py` and `.doctrine/doctrine.toml` both exist and there is
+no root `doctrine.toml`, run
+`python3 .doctrine/safety.py check`, then start the loop below.
+
+If the rulebook is at the repository root, or the copied command is missing,
+use `safety.py` from a Safety Core checkout and select the existing rulebook
+explicitly. From the target repository, for example:
+
+```sh
+python3 /absolute/path/to/safety-core/safety.py check --doctrine /absolute/path/to/project/doctrine.toml
+```
+
+Use the actual rulebook path; it may instead end in `.doctrine/doctrine.toml`.
+For the loop below, replace `python3 .doctrine/safety.py` with that checkout's
+command and append the same `--doctrine` option. Do not use `init --force` just
+to obtain a missing command: it can create another rulebook instead of using
+the one already present.
 
 ## What you may change
 
-- `.doctrine/doctrine.toml`: routes, reminders, and the `enforced_by` lists, as the loop
-  below describes.
+- The selected rulebook (`.doctrine/doctrine.toml` after a new installation):
+  routes, reminders, and the `enforced_by` lists, as the loop below describes.
 - New principles, only with the person's agreement. Each one needs an anti-principle, at
   least one axiom it serves, and a source when the claim rests on one.
 
