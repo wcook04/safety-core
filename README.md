@@ -306,7 +306,7 @@ detection. See [hook details and limits](docs/maintainers/hooks.md).
 | [examples/](examples/) | Sample project and synthetic hook demonstration. |
 | [tests/](tests/) | Checks for setup, generation, hooks and reported coverage. |
 | [sources/](sources/) | Attributed source excerpts and their local mappings. |
-| [docs/](docs/README.md) | `guides/` for adoption, `reference/` for formats and foundations, `maintainers/` for design and hooks. |
+| [docs/](docs/README.md) | `guides/` for adoption, `reference/` for formats, foundations and recorded runs, `maintainers/` for design and hooks, `img/` for current documented captures. |
 | [scripts/](scripts/) | Repository checks, map review fixtures and viewer regressions. |
 | [skills/repository-organization/](skills/repository-organization/) | Project folder roles and staged-content checks. |
 
