@@ -77,11 +77,13 @@ console.log('Map session trace: places, routes, decisions and not-run checks pas
     return {requests, example: state.exampleUrl};
   }
   const endpoint = './example-trace.json';
-  assert.deepEqual(await probe('served', 'http:', [endpoint]), {requests: [endpoint], example: endpoint});
-  assert.deepEqual(await probe('served', 'http:', []), {requests: [endpoint], example: undefined},
-    'An adopted toolkit has no bundled example and retains trace-file upload');
   const old = '../docs/reference/agent-runs-20261018-trace-hook.json';
   const local = './docs/reference/agent-runs-20261018-trace-hook.json';
+  assert.deepEqual(await probe('served', 'http:', [endpoint]), {requests: [endpoint], example: endpoint});
+  assert.deepEqual(await probe('served', 'http:', []), {requests: [endpoint, old, local], example: undefined},
+    'An adopted toolkit has no bundled example and retains trace-file upload');
+  assert.deepEqual(await probe('served', 'http:', [local]), {requests: [endpoint, old, local], example: local},
+    'Static hosting with a graph.json sidecar retains relative example discovery');
   assert.deepEqual(await probe('sample', 'http:', [local]), {requests: [old, local], example: local},
     'Static hosting retains relative recorded-example discovery');
   assert.deepEqual(await probe('embedded', 'file:', []), {requests: [], example: undefined},
