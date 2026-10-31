@@ -1243,12 +1243,17 @@ class Live:
             self.closed = True
             self.cond.notify_all()
 
+EXAMPLE_TRACE = HERE / "docs/reference/agent-runs-20261018-trace-hook.json"
+
+
 def make_server(doctrine_path: Path, port: int = 7878, interval: float = 1.0,
                 trace: dict | None = None) -> http.server.ThreadingHTTPServer:
     """A local map server on 127.0.0.1: the viewer at /, /graph.json, /events (server-sent events)
-    and, when given one, a session trace at /trace.json."""
+    and, when given one, a session trace at /trace.json. The source checkout's bundled
+    recorded example is available at /example-trace.json; arbitrary files are not served."""
     live = Live(Path(doctrine_path).resolve(), interval)
     trace_body = json.dumps(trace, ensure_ascii=False).encode() if trace else None
+    example_body = EXAMPLE_TRACE.read_bytes() if EXAMPLE_TRACE.is_file() else None
     live.rebuild()
 
     class Handler(http.server.BaseHTTPRequestHandler):
@@ -1261,7 +1266,11 @@ def make_server(doctrine_path: Path, port: int = 7878, interval: float = 1.0,
             self.send_header("Cache-Control", "no-store")
             self.send_header("Content-Length", str(len(body)))
             self.end_headers()
-            self.wfile.write(body)
+            if self.command != "HEAD":
+                self.wfile.write(body)
+
+        def do_HEAD(self) -> None:
+            self.do_GET()
 
         def do_GET(self) -> None:
             route = self.path.split("?", 1)[0]
@@ -1276,6 +1285,8 @@ def make_server(doctrine_path: Path, port: int = 7878, interval: float = 1.0,
                 self.stream()
             elif route == "/trace.json" and trace_body:
                 self.send(200, trace_body, "application/json")
+            elif route == "/example-trace.json" and example_body:
+                self.send(200, example_body, "application/json")
             else:
                 self.send(404, b"not found", "text/plain; charset=utf-8")
 
@@ -1284,6 +1295,8 @@ def make_server(doctrine_path: Path, port: int = 7878, interval: float = 1.0,
             self.send_header("Content-Type", "text/event-stream")
             self.send_header("Cache-Control", "no-store")
             self.end_headers()
+            if self.command == "HEAD":
+                return
             seen = live.version
             try:
                 self.wfile.write(b": connected\n\n")

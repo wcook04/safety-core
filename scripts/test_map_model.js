@@ -57,3 +57,36 @@ assert.deepEqual(Array.from(sess.principles.get('P1'), (e) => e.decision), ['ask
 assert.equal(sess.steps.find((st) => st.decisions.some((d) => d.decision === 'ask')).ran, false, 'No record that the asked command ran');
 assert.equal(context.stepList([4, 6]), 'steps 4, 6');
 console.log('Map session trace: places, routes, decisions and not-run checks passed on the recorded example');
+
+// Exercise actual async discovery in each supported host, without a browser.
+(async () => {
+  async function probe(origin, protocol, available) {
+    const requests = [];
+    const state = {origin, session: null};
+    const host = vm.createContext({S: state, location: {protocol},
+      renderPanel() {}, renderTrace() {},
+      async fetch(url, options) {
+        assert.equal(options.method, 'HEAD');
+        requests.push(url);
+        return {ok: available.includes(url)};
+      }});
+    vm.runInContext(html.match(/  const EXAMPLE_TRACES =.*;/)[0] +
+      between('  async function probeExample()', '  function traceOpenHTML()') +
+      '\nthis.probeExample = probeExample;', host);
+    await host.probeExample();
+    return {requests, example: state.exampleUrl};
+  }
+  const endpoint = './example-trace.json';
+  const old = '../docs/reference/agent-runs-20261018-trace-hook.json';
+  const local = './docs/reference/agent-runs-20261018-trace-hook.json';
+  assert.deepEqual(await probe('served', 'http:', [endpoint]), {requests: [endpoint], example: endpoint});
+  assert.deepEqual(await probe('served', 'http:', []), {requests: [endpoint, old, local], example: undefined},
+    'An adopted toolkit has no bundled example and retains trace-file upload');
+  assert.deepEqual(await probe('served', 'http:', [local]), {requests: [endpoint, old, local], example: local},
+    'Static hosting with a graph.json sidecar retains relative example discovery');
+  assert.deepEqual(await probe('sample', 'http:', [local]), {requests: [old, local], example: local},
+    'Static hosting retains relative recorded-example discovery');
+  assert.deepEqual(await probe('embedded', 'file:', []), {requests: [], example: undefined},
+    'Standalone maps do not probe HTTP-only resources');
+  console.log('Map example discovery: native, adopted, static and standalone hosts passed');
+})().catch((error) => { console.error(error); process.exitCode = 1; });
