@@ -69,6 +69,8 @@ class StructureTests(unittest.TestCase):
             self.assertIn('docs/guides/agent-setup.md', paths)
             self.assertIn('map.html', paths)
             self.assertNotIn('.doctrine/graph.json', paths)
+            (root / 'docs/guides/agent-setup.md').unlink()
+            self.assertNotIn('docs/guides/agent-setup.md', structure.candidates(root))
             git('add', '-f', '.doctrine/graph.json')
             self.assertTrue(any(e.startswith('.doctrine/graph.json:')
                                 for e in structure.check(structure.candidates(root))))

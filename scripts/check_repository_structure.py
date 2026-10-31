@@ -19,7 +19,8 @@ DOC_ROLES = {'guides', 'reference', 'maintainers', 'img'}
 def candidates(root: Path) -> set[str]:
     raw = subprocess.check_output(
         ['git', 'ls-files', '-z', '--cached', '--others', '--exclude-standard'], cwd=root)
-    return set(raw.decode().split('\0')) - {''}
+    paths = set(raw.decode().split('\0')) - {''}
+    return {p for p in paths if (root / p).is_file() or (root / p).is_symlink()}
 
 
 def check(paths: set[str]) -> list[str]:
