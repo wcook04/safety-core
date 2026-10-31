@@ -8,7 +8,8 @@ connects to.
 [Watch the experiment](https://www.youtube.com/watch?v=ayl3sOCwaHQ) ·
 [Try the checks](#try-the-checks-without-an-agent) ·
 [Copy into a project](#what-happens-after-cloning) ·
-[Documentation](docs/README.md) · [Source map](#repository-map)
+[Documentation](docs/README.md) · [Source map](#repository-map) ·
+[Will Cook’s projects](https://wcook04.github.io/)
 
 A rule such as “preserve meaningful tests” can produce an editing reminder.
 That reminder cannot tell whether an edit preserved a test's meaning. Safety
@@ -33,6 +34,23 @@ reminder, an approval request and a refusal are different outcomes. It uses a
 local Git remote, needs no packages or model account, and does not publish
 anything. This tests the configured mechanisms; the recorded agent experiment
 below asks what happened when an actual agent encountered a failing check.
+
+A successful `check` reports `check passed` and may still report warnings.
+In this source clone, hooks are not wired into local Claude Code settings, so
+warnings include that missing configuration and weaker coverage. Read the
+warnings and coverage table; a pass does not mean the hooks ran.
+
+Inspect a file that exists in the clone, then generate a map you can open locally:
+
+```sh
+python3 safety.py explain tests/test_check.py
+python3 safety.py map --out /tmp/safety-core-map.html --open
+```
+
+`explain` shows the matching `tests` route, principles P6 and P7, and the support
+recognized for each. The map lets you follow those connections visually. For a
+machine-readable configuration report, run `python3 safety.py check --json`;
+its coverage scope is declared repository configuration, not live hook execution.
 
 ## Measured: does a written rule change what an agent does?
 
@@ -288,7 +306,7 @@ detection. See [hook details and limits](docs/maintainers/hooks.md).
 | [examples/](examples/) | Sample project and synthetic hook demonstration. |
 | [tests/](tests/) | Checks for setup, generation, hooks and reported coverage. |
 | [sources/](sources/) | Attributed source excerpts and their local mappings. |
-| [docs/](docs/README.md) | `guides/` for adoption, `reference/` for formats and foundations, `maintainers/` for design and hooks. |
+| [docs/](docs/README.md) | `guides/` for adoption, `reference/` for formats, foundations and recorded runs, `maintainers/` for design and hooks, `img/` for current documented captures. |
 | [scripts/](scripts/) | Repository checks, map review fixtures and viewer regressions. |
 | [skills/repository-organization/](skills/repository-organization/) | Project folder roles and staged-content checks. |
 
@@ -319,7 +337,9 @@ experiments, or the mathematical research.
 - [Plectis toolkit](https://github.com/wcook04/practical-formal-verification) contains earlier Python components and worked examples; its [software map](https://wcook04.github.io/practical-formal-verification/docs/system-map.html) explains their roles.
 - [Plectis Erdős](https://github.com/wcook04/plectis-erdos) publishes the mathematical research, proofs and open questions; [read the papers](https://wcook04.github.io/practical-formal-verification/maths/).
 
-The [Plectis website](https://wcook04.github.io/practical-formal-verification/) collects the projects and their videos.
+The [project index](https://wcook04.github.io/) collects Will Cook’s projects,
+websites and videos. The [Plectis toolkit website](https://wcook04.github.io/practical-formal-verification/)
+contains its software guides and mathematical reading pages.
 
 For fixes and rule proposals, see [Contributing](CONTRIBUTING.md). Use the [private reporting route](SECURITY.md) for vulnerabilities.
 

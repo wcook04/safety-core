@@ -1,5 +1,6 @@
 """Placement rules cover source, staged changes and ignored local state."""
 from pathlib import Path
+import json
 import subprocess
 import sys
 import tempfile
@@ -10,6 +11,29 @@ import check_repository_structure as structure
 
 
 class StructureTests(unittest.TestCase):
+    def test_documentation_images_have_consumers_and_existing_targets(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            (root / 'docs/guides').mkdir(parents=True)
+            (root / 'docs/maintainers').mkdir()
+            (root / 'docs/img').mkdir()
+            (root / 'README.md').write_text('<picture><source srcset="docs/img/dark.png">'
+                                          '<img src="docs/img/light.png"></picture>')
+            (root / 'docs/guides/map.md').write_text('![Phone](../img/phone.png)\n'
+                                                   '![Outside](https://example.invalid/remote.png)')
+            manifest = 'docs/maintainers/map-captures.json'
+            (root / manifest).write_text(json.dumps({'artifacts': {'docs/img/capture.png': 'hash'}}))
+            paths = {'README.md', 'docs/guides/map.md', manifest,
+                     'docs/img/dark.png', 'docs/img/light.png', 'docs/img/phone.png', 'docs/img/capture.png'}
+            self.assertEqual(structure.check_doc_images(root, paths), [])
+            orphan = 'docs/img/superseded.png'
+            self.assertIn(orphan + ': image has no documentation consumer or capture record',
+                          structure.check_doc_images(root, paths | {orphan}))
+            for missing in ('docs/img/light.png', 'docs/img/capture.png'):
+                with self.subTest(missing=missing):
+                    self.assertIn(missing + ': documentation or capture record references a missing image',
+                                  structure.check_doc_images(root, paths - {missing}))
+
     def test_role_boundaries(self):
         accepted = structure.REQUIRED | structure.ROOT_FILES | {
             'docs/guides/adoption.md', 'docs/reference/graph-schema.md',
@@ -45,6 +69,8 @@ class StructureTests(unittest.TestCase):
             self.assertIn('docs/guides/agent-setup.md', paths)
             self.assertIn('map.html', paths)
             self.assertNotIn('.doctrine/graph.json', paths)
+            (root / 'docs/guides/agent-setup.md').unlink()
+            self.assertNotIn('docs/guides/agent-setup.md', structure.candidates(root))
             git('add', '-f', '.doctrine/graph.json')
             self.assertTrue(any(e.startswith('.doctrine/graph.json:')
                                 for e in structure.check(structure.candidates(root))))

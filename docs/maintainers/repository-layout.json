@@ -79,6 +79,15 @@
     "skills/repository-organization": {
       "purpose": "Workflow and portable checks for extending each project\u2019s own folder organisation",
       "guide": "skills/repository-organization/SKILL.md"
+    },
+    "docs/img": {
+      "purpose": "Current documentation captures with guide consumers and capture provenance; superseded UI previews remain in Git history",
+      "suffixes": [
+        ".png",
+        ".jpg",
+        ".svg"
+      ],
+      "guide": "docs/guides/map.md"
     }
   },
   "exceptions": {},
