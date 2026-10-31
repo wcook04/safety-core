@@ -338,8 +338,8 @@ experiments, or the mathematical research.
 - [Plectis Erdős](https://github.com/wcook04/plectis-erdos) publishes the mathematical research, proofs and open questions; [read the papers](https://wcook04.github.io/practical-formal-verification/maths/).
 
 The [project index](https://wcook04.github.io/) collects Will Cook’s projects,
-websites and videos. The [Plectis toolkit website](https://wcook04.github.io/practical-formal-verification/)
-contains its software guides and mathematical reading pages.
+websites and videos. The [Plectis toolkit guides](https://wcook04.github.io/practical-formal-verification/docs/)
+show how to run its software examples and inspect their source.
 
 For fixes and rule proposals, see [Contributing](CONTRIBUTING.md). Use the [private reporting route](SECURITY.md) for vulnerabilities.
 

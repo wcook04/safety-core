@@ -67,7 +67,10 @@ python3 .doctrine/safety.py trace .doctrine/sessions/<session id> --out trace.js
 python3 .doctrine/safety.py map --trace trace.json --out trace-map.html --open
 ```
 
-`map --serve --trace trace.json --open` does the same on the live map. From this checkout,
+`map --serve --trace trace.json --open` does the same on the live map. The native server
+provides a supplied trace at `/trace.json` and the source checkout’s bundled example
+at `/example-trace.json`. It does not serve arbitrary repository files. Adopted projects
+do not include the bundled example; use your own trace file instead. From this checkout,
 **Recorded example** in the bar above the map (or `viewer/map.html?trace=../docs/reference/agent-runs-20261018-trace-hook.json`
 when the checkout is served, for example with `python3 -m http.server`) opens a real Claude
 Haiku run: the pre-commit test fails, the agent retries `git commit` with an invented

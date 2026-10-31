@@ -169,6 +169,13 @@ class TraceCli(TraceCase):
         response = conn.getresponse()
         self.assertEqual((response.status, json.loads(response.read())["session"]), (200, self.session))
         conn.close()
+        conn = http.client.HTTPConnection("127.0.0.1", server.server_address[1], timeout=5)
+        conn.request("HEAD", "/trace.json")
+        response = conn.getresponse()
+        self.assertEqual((response.status, response.getheader("Content-Type"), response.read()),
+                         (200, "application/json", b""))
+        self.assertGreater(int(response.getheader("Content-Length")), 0)
+        conn.close()
 
 
 class SampleTraces(unittest.TestCase):

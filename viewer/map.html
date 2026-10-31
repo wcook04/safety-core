@@ -1417,7 +1417,8 @@ details.entry pre { font: 11.5px/1.55 var(--mono); white-space: pre-wrap; color:
   }
   async function probeExample() {
     if (location.protocol === 'file:') return;
-    for (const url of EXAMPLE_TRACES) {
+    const urls = S.origin === 'served' ? ['./example-trace.json'] : EXAMPLE_TRACES;
+    for (const url of urls) {
       try {
         const res = await fetch(url, { method: 'HEAD', cache: 'no-store' });
         if (res.ok) { S.exampleUrl = url; if (!S.session) { renderPanel(); renderTrace(); } return; }
