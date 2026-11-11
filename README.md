@@ -298,6 +298,8 @@ detection. See [hook details and limits](docs/maintainers/hooks.md).
 
 ## Videos and related projects
 
+[Introduction to the projects](https://www.youtube.com/watch?v=Yk_kUQUCylc) · [Safety Core short](https://www.youtube.com/watch?v=3l0kQ7CEKps)
+
 The [Safety Core video](https://www.youtube.com/watch?v=ayl3sOCwaHQ)
 starts with the invented-setting workaround, then explains the rulebook,
 the experiment and the record of one agent's actions.
@@ -307,9 +309,6 @@ the experiment and the record of one agent's actions.
 | Which rules apply to a file, and which have an executable check | [Rulebook](doctrine.toml), [map guide](docs/guides/map.md) and [check coverage](#what-the-checks-actually-cover) |
 | Compare no Safety Core, written rules, and rules with checks | [Experiment, saved runs and limits](docs/reference/agent-runs-20261018.md) |
 | Follow the attempted retry and approval request | [Recorded trace](docs/reference/agent-runs-20261018-trace-hook.json) and the [command above](#measured-does-a-written-rule-change-what-an-agent-does) |
-
-The [Plectis introduction](https://www.youtube.com/watch?v=MBmVMMogXTA)
-explains how this work relates to the other projects.
 
 ### Where Safety Core fits
 
