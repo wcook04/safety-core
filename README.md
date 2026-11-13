@@ -298,7 +298,7 @@ detection. See [hook details and limits](docs/maintainers/hooks.md).
 
 ## Videos and related projects
 
-[Introduction to the projects](https://www.youtube.com/watch?v=Yk_kUQUCylc) · [Safety Core short](https://www.youtube.com/watch?v=3l0kQ7CEKps)
+[Introduction to the projects](https://www.youtube.com/watch?v=FwgaZYH2otY) · [Safety Core short](https://www.youtube.com/watch?v=tz78Xure5AI)
 
 The [Safety Core video](https://www.youtube.com/watch?v=ayl3sOCwaHQ)
 starts with the invented-setting workaround, then explains the rulebook,
