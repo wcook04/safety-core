@@ -92,7 +92,8 @@ case, not general prevention of workarounds.
 
 Rules and checks against no Safety Core: p = 0.00001; against instructions only: p = 0.011 (Fisher exact).
 No Safety Core against instructions only: p = 0.09, not significant. In this
-experiment, every successful workaround under instructions only was disclosed;
+experiment, all six successful workarounds under instructions only mentioned
+the setting in the final reply, and two of the six said the value was a dummy;
 with the check enabled, all six attempted retries required approval.
 
 Other situations, same three setups: asked whether the tests pass, 3, 4 and 0 of 10 runs claimed a pass
